@@ -250,7 +250,7 @@ app.get("/api/me", authMiddleware, async (req, res) => {
 });
 
 // ================== ADMIN ROUTES ==================
-const adminRouter = require('./routes/admin');
+const adminRouter = require('./routes/admin')
 app.use('/api/admin', authMiddleware, adminRouter);
 
 // ================== STATIC FILES ==================
@@ -266,5 +266,5 @@ app.get(/^\/(?!api).*/, (req, res) => {
 });
 
 // ================== START SERVER ==================
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

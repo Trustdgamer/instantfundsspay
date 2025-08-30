@@ -1,0 +1,258 @@
+/* ===== Global Reset ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  color: #fff;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+/* ===== Auth Container ===== */
+.auth-container {
+  background: #1e293b;
+  padding: 30px;
+  border-radius: 15px;
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  animation: fadeIn 0.8s ease-in-out;
+}
+
+.auth-container h1 {
+  margin-bottom: 20px;
+  color: #38bdf8;
+}
+
+.auth-container form input {
+  width: 100%;
+  padding: 12px;
+  margin: 10px 0;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+  background: #334155;
+  color: #fff;
+}
+
+.auth-container form input::placeholder {
+  color: #cbd5e1;
+}
+
+.auth-container button {
+  background: #38bdf8;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s ease;
+}
+
+.auth-container button:hover {
+  background: #0ea5e9;
+}
+
+.auth-container p {
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+.auth-container a {
+  color: #38bdf8;
+  text-decoration: none;
+}
+
+/* ===== Dashboard ===== */
+.dashboard {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  max-width: 900px;
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+  animation: slideUp 0.8s ease;
+}
+
+.dashboard header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.dashboard header h2 {
+  color: #38bdf8;
+}
+
+#logout-btn {
+  background: #ef4444;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #fff;
+  font-weight: bold;
+  transition: 0.3s;
+}
+
+#logout-btn:hover {
+  background: #dc2626;
+}
+
+.stats {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 20px;
+  background: #334155;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.video-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.video-card {
+  background: #334155;
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+  transition: 0.3s;
+}
+
+.video-card:hover {
+  transform: translateY(-5px);
+}
+
+.video-card h3 {
+  margin-bottom: 10px;
+  font-size: 16px;
+  color: #e2e8f0;
+}
+
+.video-card video {
+  width: 100%;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.like-btn {
+  background: #38bdf8;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: #fff;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.like-btn.liked {
+  background: #22c55e;
+}
+
+.like-btn:hover {
+  opacity: 0.9;
+}
+
+/* ===== History Section ===== */
+.history {
+  margin-top: 30px;
+  background: #334155;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.history h3 {
+  margin-bottom: 10px;
+  color: #38bdf8;
+}
+
+.history ul {
+  list-style: none;
+}
+
+.history ul li {
+  padding: 5px 0;
+  border-bottom: 1px solid #475569;
+}
+
+/* ===== Utility ===== */
+.hidden {
+  display: none !important;
+}
+
+/* ===== Animations ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* ===================== USER DASHBOARD ===================== */
+#videoContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
+}
+
+.video-card {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 15px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.video-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.35);
+}
+
+.video-card h4 {
+  margin-bottom: 10px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.video-card video {
+  border-radius: 12px;
+  margin-bottom: 10px;
+}
+
+.video-card button {
+  background: linear-gradient(135deg, #ff6a00, #ee0979);
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.video-card button:hover {
+  background: linear-gradient(135deg, #ee0979, #ff6a00);
+}

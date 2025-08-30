@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>InstantFundsPay — Login / Register</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial; }
+    html,body { height: 100%; }
+    body {
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: linear-gradient(135deg,#071029 0%, #122033 50%, #1b2b49 100%);
+      color: #eef2ff;
+      perspective:1200px;
+      overflow:hidden;
+    }
+    body::before, body::after {
+      content:"";
+      position:absolute; border-radius:50%; filter:blur(90px); opacity:.45; z-index:0;
+    }
+    body::before { width:420px;height:420px; left:-110px; top:-80px; background: linear-gradient(180deg,#6b46c1,#805ad5); }
+    body::after  { width:520px;height:520px; right:-160px; bottom:-140px; background: linear-gradient(180deg,#06b6d4,#60a5fa); }
+
+    .card-wrapper { 
+      width:100%; max-width:420px; height:480px;
+      z-index:1; padding:12px; position:relative;
+    }
+    .card {
+      width:100%; height:100%; border-radius:14px;
+      transform-style:preserve-3d;
+      transition: transform .9s cubic-bezier(.2,.9,.2,1);
+      margin: 0 auto; position:relative;
+    }
+    .card.flipped { transform: rotateY(180deg); }
+
+    .panel {
+      width:100%; height:100%;
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(8px) saturate(120%);
+      position:absolute; left:0; top:0; backface-visibility: hidden;
+      display:flex; flex-direction:column; justify-content:center; gap:12px; align-items:stretch;
+      overflow:hidden;
+    }
+    .panel h2 { text-align:center; margin-bottom:6px; font-size:1.4rem; color:#f8fafc; letter-spacing:.2px; }
+    .panel p.hint { text-align:center; color:rgba(230,230,255,0.6); font-size:0.9rem; margin-bottom:4px; }
+    .panel.back { transform: rotateY(180deg); }
+
+    form { display:flex; flex-direction:column; gap:10px; }
+    .input {
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      border-radius:10px; padding:12px 14px;
+      border: 1px solid rgba(255,255,255,0.06);
+      color:#eaf2ff; outline:none;
+      transition: box-shadow .18s, transform .12s, border-color .18s;
+      position:relative;
+    }
+    .input::placeholder { color: rgba(230,240,255,0.45); }
+    .input:focus {
+      box-shadow: 0 6px 28px rgba(99,102,241,0.12), 0 0 18px rgba(96,165,250,0.06) inset;
+      border-color: rgba(96,165,250,0.35);
+      transform: translateY(-1px);
+    }
+    .input:focus + .glow { opacity:1; transform:scaleX(1); }
+    .glow { height:3px; border-radius:3px; width:100%; background: linear-gradient(90deg,#7c3aed,#06b6d4); opacity:0; transform:scaleX(.6); transition: all .25s ease; margin-top:-6px; margin-bottom:6px; }
+
+    .row { display:flex; gap:8px; align-items:center; justify-content:space-between; }
+    .checkbox { display:flex; gap:8px; align-items:center; color:rgba(230,230,255,0.8); font-size:0.95rem; }
+    .link { color:#a5f3fc; text-decoration:none; cursor:pointer; }
+    .link:hover { text-decoration:underline; }
+
+    .btn { background: linear-gradient(135deg,#7c3aed,#06b6d4); padding:12px; border-radius:10px; border:none; color:white; font-weight:700; cursor:pointer; box-shadow: 0 8px 20px rgba(99,102,241,0.12); transition: transform .12s, opacity .12s; }
+    .btn:active { transform:translateY(1px) scale(.997); }
+    .btn.secondary { background: transparent; border:1px solid rgba(255,255,255,0.06); color:#dbeafe; font-weight:600; }
+
+    .msg { min-height:18px; font-size:0.9rem; color:#ffd; text-align:center; }
+
+    #strengthBar { height:6px; border-radius:6px; background: rgba(255,255,255,0.06); overflow:hidden; }
+    #strengthBar .fill { width:0%; height:100%; transition:width .25s ease; background:linear-gradient(90deg,#ff5f6d,#ffc371); }
+
+   .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(2,6,23,0.8);
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+    }
+    .modal {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(0,0,0,0.85);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 12px 50px rgba(0,0,0,0.7);
+      color: #eef2ff;
+      z-index: 100000;
+    }
+    .modal.show { display:flex; align-items:center; justify-content:center; }
+  </style>
+</head>
+<body>
+  <div class="card-wrapper">
+    <div class="card" id="authCard" aria-live="polite">
+      <!-- LOGIN PANEL -->
+      <div class="panel front">
+        <h2>Welcome back</h2>
+        <p class="hint">Sign in to access your InstantFundsPay dashboard</p>
+        <form id="loginForm" autocomplete="on">
+          <input class="input" id="loginEmail" type="email" placeholder="Email" required /><div class="glow"></div>
+          <input class="input" id="loginPassword" type="password" placeholder="Password" required /><div class="glow"></div>
+          <div class="row">
+            <label class="checkbox"><input id="rememberMe" type="checkbox" style="accent-color:#7c3aed" /> Remember me</label>
+            <a class="link" id="forgotBtn">Forgot password?</a>
+          </div>
+          <button class="btn" type="submit">Login</button>
+          <div class="row" style="margin-top:6px;">
+            <button type="button" class="btn secondary" onclick="flipCard()">Create account</button>
+            <div style="flex:1"></div>
+          </div>
+          <div class="msg" id="loginMsg"></div>
+        </form>
+      </div>
+
+      <!-- REGISTER PANEL -->
+      <div class="panel back">
+        <h2>Create account</h2>
+        <p class="hint">Quick, secure sign up — verification code will be sent to your email</p>
+        <form id="registerForm" autocomplete="on">
+          <input class="input" id="name" type="text" placeholder="Full name" required /><div class="glow"></div>
+          <input class="input" id="regEmail" type="email" placeholder="Email" required /><div class="glow"></div>
+          <input class="input" id="regPassword" type="password" placeholder="Password" required oninput="checkStrength(this.value)" />
+          <div id="strengthBar"><div class="fill"></div></div>
+          <input class="input" id="confirm" type="password" placeholder="Confirm password" required /><div class="glow"></div>
+          <div class="row">
+            <button class="btn" type="submit">Register</button>
+            <button type="button" class="btn secondary" onclick="flipCard()">Back</button>
+          </div>
+          <div class="msg" id="registerMsg"></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORGOT PASSWORD MODAL (3-step flow) -->
+  <div id="forgotModal" class="modal-backdrop" role="dialog" aria-modal="true">
+    <div class="modal">
+      <h3 style="text-align:center;margin-bottom:8px">Reset Password</h3>
+      <p style="text-align:center;color:rgba(230,230,255,0.7);margin-bottom:10px">
+        Follow the steps to reset your password
+      </p>
+
+      <!-- Step 1: Email -->
+      <div id="fp-step1">
+        <input id="forgotEmail" class="input" type="email" placeholder="Your email" />
+        <button class="btn" id="requestCode">Request Reset Code</button>
+      </div>
+
+      <!-- Step 2: Code -->
+      <div id="fp-step2" style="display:none;">
+        <input id="resetCode" class="input" type="text" placeholder="Enter 6-digit code" maxlength="6" />
+        <button class="btn" id="verifyCode">Verify Code</button>
+      </div>
+
+      <!-- Step 3: New Password -->
+      <div id="fp-step3" style="display:none;">
+        <input id="newPassword" class="input" type="password" placeholder="New password" />
+        <input id="confirmPassword" class="input" type="password" placeholder="Confirm password" />
+        <button class="btn" id="submitReset">Reset Password</button>
+      </div>
+
+      <button class="btn secondary" id="closeForgot">Cancel</button>
+      <p class="msg" id="forgotMsg"></p>
+    </div>
+  </div>
+
+<script>
+/* ---------------------- HELPERS ---------------------- */
+const card = document.getElementById('authCard');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const loginMsg = document.getElementById('loginMsg');
+const registerMsg = document.getElementById('registerMsg');
+const forgotBtn = document.getElementById('forgotBtn');
+const forgotModal = document.getElementById('forgotModal');
+const closeForgot = document.getElementById('closeForgot');
+const forgotMsg = document.getElementById('forgotMsg');
+const rememberMe = document.getElementById('rememberMe');
+
+function setMsg(el,text,color=''){ el.style.color=color||''; el.textContent=text||''; }
+function flipCard(){ card.classList.toggle('flipped'); setMsg(loginMsg,''); setMsg(registerMsg,''); }
+
+/* ---------------------- PASSWORD STRENGTH ---------------------- */
+function checkStrength(pwd){
+  const fill=document.querySelector('#strengthBar .fill'); let score=0;
+  if(pwd.length>6) score++; if(/[A-Z]/.test(pwd)) score++; if(/[0-9]/.test(pwd)) score++; if(/[^A-Za-z0-9]/.test(pwd)) score++;
+  fill.style.width=(score/4*100)+'%';
+  if(score<=1) fill.style.background='#ff4d4f';
+  else if(score===2) fill.style.background='#ffb020';
+  else if(score===3) fill.style.background='#9ae66e';
+  else fill.style.background='#22c55e';
+}
+
+/* ---------------------- FORGOT PASSWORD FLOW ---------------------- */
+let userEmail = "";
+
+forgotBtn.addEventListener('click',()=>{ forgotModal.style.display='flex'; });
+closeForgot.addEventListener('click',()=>{ forgotModal.style.display='none'; setMsg(forgotMsg,''); });
+
+document.getElementById('requestCode').addEventListener('click', async ()=>{
+  const email = document.getElementById('forgotEmail').value.trim();
+  if(!email){ setMsg(forgotMsg,'Enter your email','orange'); return; }
+  setMsg(forgotMsg,'Requesting code...','lightblue');
+  try{
+    const res = await fetch('/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const data = await res.json();
+    if(res.ok){
+      userEmail = email;
+      setMsg(forgotMsg,data.message||'Code sent','lightgreen');
+      document.getElementById('fp-step1').style.display='none';
+      document.getElementById('fp-step2').style.display='block';
+    } else setMsg(forgotMsg,data.message||'Failed','red');
+  } catch(e){ setMsg(forgotMsg,'Network/server error','red'); }
+});
+
+document.getElementById('verifyCode').addEventListener('click', async ()=>{
+  const code = document.getElementById('resetCode').value.trim();
+  if(!code){ setMsg(forgotMsg,'Enter the code','orange'); return; }
+  setMsg(forgotMsg,'Verifying...','lightblue');
+  try{
+    const res = await fetch('/verify-reset-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:userEmail,code})});
+    const data = await res.json();
+    if(res.ok){
+      setMsg(forgotMsg,data.message||'Code verified','lightgreen');
+      document.getElementById('fp-step2').style.display='none';
+      document.getElementById('fp-step3').style.display='block';
+    } else setMsg(forgotMsg,data.message||'Invalid code','red');
+  } catch(e){ setMsg(forgotMsg,'Server error','red'); }
+});
+
+document.getElementById('submitReset').addEventListener('click', async ()=>{
+  const code=document.getElementById('resetCode').value.trim();
+  const newPassword=document.getElementById('newPassword').value;
+  const confirm=document.getElementById('confirmPassword').value;
+  if(!newPassword||!confirm){ setMsg(forgotMsg,'Enter new password','orange'); return; }
+  if(newPassword!==confirm){ setMsg(forgotMsg,'Passwords do not match','red'); return; }
+  setMsg(forgotMsg,'Resetting...','lightblue');
+  try{
+    const res=await fetch('/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:userEmail,code,newPassword})});
+    const data=await res.json();
+    if(res.ok){
+      setMsg(forgotMsg,data.message||'Password reset','lightgreen');
+      setTimeout(()=>{ forgotModal.style.display='none'; },2000);
+    } else setMsg(forgotMsg,data.message||'Failed','red');
+  } catch(e){ setMsg(forgotMsg,'Server error','red'); }
+});
+
+/* ---------------------- LOGIN ---------------------- */
+loginForm.addEventListener('submit', async ev=>{
+  ev.preventDefault(); setMsg(loginMsg,'Signing in...','lightblue');
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const remember=rememberMe.checked;
+  try{
+    const res = await fetch('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+    const data = await res.json();
+    if(!res.ok){ setMsg(loginMsg,data.message||'Invalid credentials','red'); return; }
+    localStorage.setItem('token',data.token);
+    if(remember) localStorage.setItem('remember','1'); else localStorage.removeItem('remember');
+    if(data.role==='admin') window.location.href='/admin.html';
+    else window.location.href='/user.html';
+  } catch(err){ setMsg(loginMsg,'Server/network error','red'); console.error(err); }
+});
+
+/* ---------------------- REGISTER ---------------------- */
+registerForm.addEventListener('submit', async ev=>{
+  ev.preventDefault(); setMsg(registerMsg,'Creating account...','lightblue');
+  const name=document.getElementById('name').value.trim();
+  const email=document.getElementById('regEmail').value.trim();
+  const password=document.getElementById('regPassword').value;
+  const confirm=document.getElementById('confirm').value;
+  if(password!==confirm){ setMsg(registerMsg,'Passwords do not match','red'); return; }
+  if(password.length<6){ setMsg(registerMsg,'Use at least 6 characters','orange'); return; }
+  try{
+    const res = await fetch('/api/auth/register',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,email,password})});
+    const data = await res.json();
+    if(!res.ok){ setMsg(registerMsg,data.message||'Registration failed','red'); return; }
+    setMsg(registerMsg,'Registered successfully!','lightgreen');
+    setTimeout(()=> flipCard(),1600);
+  } catch(err){ console.error(err); setMsg(registerMsg,'Server/network error','red'); }
+});
+
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') forgotModal.style.display='none'; });
+</script>
+</body>
+</html>

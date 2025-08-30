@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard - InstantFundsPay</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; }
+    body {
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color: #f5f5f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container { width: 100%; max-width: 1200px; }
+
+    /* Header */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px 20px;
+      border-radius: 12px;
+      backdrop-filter: blur(8px);
+    }
+    header h2 { font-size: 1.6em; color: #f9d342; }
+    header button {
+      background: #e74c3c; border: none; color: #fff;
+      padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: 0.3s;
+    }
+    header button:hover { background: #c0392b; }
+
+    /* Cards */
+    .card {
+      background: rgba(255, 255, 255, 0.08);
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      margin-bottom: 30px;
+      backdrop-filter: blur(10px);
+    }
+    .card h3 { margin-bottom: 15px; color: #f9d342; }
+    input, textarea {
+      width: 100%; padding: 12px; margin-bottom: 12px;
+      border-radius: 6px; border: none; outline: none; font-size: 14px;
+    }
+    button { padding: 10px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; }
+    .btn-primary { background: #3498db; color: #fff; transition: 0.3s; }
+    .btn-primary:hover { background: #2980b9; }
+    .btn-danger { background: #e74c3c; color: #fff; transition: 0.3s; }
+    .btn-danger:hover { background: #c0392b; }
+
+    /* Video Grid */
+    .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .video-card {
+      background: rgba(0,0,0,0.5);
+      border-radius: 10px; padding: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      text-align: center; transition: transform 0.2s;
+    }
+    .video-card:hover { transform: scale(1.03); }
+    .video-card h4 { margin-bottom: 10px; color: #f9d342; font-size: 1em; }
+    .video-card video, .video-card iframe {
+      width: 100%; border-radius: 8px; margin-bottom: 10px;
+    }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; background: rgba(0,0,0,0.6); border-radius: 10px; overflow: hidden; }
+    th, td { padding: 12px 15px; text-align: left; }
+    th { background: #3498db; color: #fff; }
+    tr:nth-child(even) { background: rgba(255, 255, 255, 0.05); }
+    tr td { color: #f5f5f5; }
+
+    /* Toasts */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.85);
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-top: 8px;
+      animation: fadeInOut 4s forwards;
+      z-index: 2000;
+      font-size: 14px;
+    }
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(20px); }
+      10% { opacity: 1; transform: translateY(0); }
+      90% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(20px); }
+    }
+
+    /* Mobile adjustments */
+    @media(max-width:768px) {
+      .video-grid { grid-template-columns: 1fr; }
+      header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      header h2 { font-size: 1.3em; }
+      header button { width: 100%; text-align: center; }
+      .btn-primary, .btn-danger { width: 100%; margin-top: 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="admin-dashboard">
+    <header>
+      <h2>Admin Dashboard - InstantFundsPay</h2>
+      <button onclick="logout()">Logout</button>
+    </header>
+
+    <!-- Upload Local Video -->
+    <section class="card upload">
+      <h3>Upload Local Video</h3>
+      <form id="uploadForm" enctype="multipart/form-data">
+        <input type="text" name="title" placeholder="Video Title" required />
+        <input type="file" name="video" accept="video/*" required />
+        <button type="submit" class="btn-primary">Upload Video</button>
+      </form>
+      <p id="uploadMessage"></p>
+    </section>
+
+    <!-- Add YouTube Video -->
+    <section class="card upload">
+      <h3>Add YouTube Video</h3>
+      <form id="youtubeForm">
+        <input type="text" name="title" placeholder="Video Title" />
+        <input type="text" name="url" placeholder="YouTube URL" required />
+        <button type="submit" class="btn-primary">Add YouTube Video</button>
+      </form>
+      <p id="youtubeMessage"></p>
+    </section>
+
+    <!-- Manage Videos -->
+    <section class="card videos">
+      <h3>All Videos</h3>
+      <div class="video-grid" id="admin-video-list"></div>
+    </section>
+
+    <!-- Manage Users -->
+    <section class="card users">
+      <h3>All Users</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="user-list"></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      showToast("No token found. Please log in again.", true);
+      window.location.href = "/";
+    }
+
+    function logout() {
+      localStorage.removeItem("token");
+      window.location.href = "/";
+    }
+
+    // Toast helper
+    function showToast(message, error = false) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.style.background = error ? "rgba(231,76,60,0.9)" : "rgba(52,152,219,0.9)";
+      toast.innerText = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4000);
+    }
+
+    // Upload local video
+    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      try {
+        const res = await fetch("/api/admin/videos/upload", {
+          method: "POST",
+          body: formData,
+          headers: { Authorization: "Bearer " + token }
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
+        showToast("✅ Video uploaded!");
+        e.target.reset(); loadAdminData();
+      } catch (err) {
+        showToast("❌ " + err.message, true);
+      }
+    });
+
+    // Add YouTube video
+    document.getElementById("youtubeForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = e.target.title.value;
+      const url = e.target.url.value;
+      try {
+        const res = await fetch("/api/admin/videos/youtube", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+          body: JSON.stringify({ title, url })
+        });
+        const data = await res.json();
+        if (!res.ok || data.error) throw new Error(data.error || "YouTube add failed");
+        showToast("✅ YouTube video added!");
+        e.target.reset(); loadAdminData();
+      } catch (err) {
+        showToast("❌ " + err.message, true);
+      }
+    });
+
+    // Load all videos and users
+    async function loadAdminData() {
+      try {
+        // Videos
+        const videosRes = await fetch("/api/admin/videos", { headers: { Authorization: "Bearer " + token } });
+        const videos = await videosRes.json();
+        const videoList = document.getElementById("admin-video-list");
+        videoList.innerHTML = "";
+        videos.forEach(v => {
+          const card = document.createElement("div");
+          card.classList.add("video-card");
+          const media = v.url.includes("youtube.com") || v.url.includes("youtu.be") ?
+                        `<iframe src="${v.url.replace("watch?v=","embed/")}" frameborder="0" allowfullscreen></iframe>` :
+                        `<video src="${v.url}" controls></video>`;
+          card.innerHTML = `
+            <h4>${v.title}</h4>
+            ${media}
+            <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
+          `;
+          videoList.appendChild(card);
+        });
+
+        // Users
+        const usersRes = await fetch("/api/admin/users", { headers: { Authorization: "Bearer " + token } });
+        const users = await usersRes.json();
+        const userList = document.getElementById("user-list");
+        userList.innerHTML = "";
+        users.forEach(u => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${u.email}</td>
+            <td>${u.role}</td>
+            <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>
+          `;
+          userList.appendChild(row);
+        });
+      } catch (err) {
+        showToast("❌ Error loading admin data: " + err.message, true);
+      }
+    }
+
+    async function deleteVideo(id) {
+      try {
+        const res = await fetch(`/api/admin/videos/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) throw new Error("Failed to delete video");
+        showToast("✅ Video deleted");
+        loadAdminData();
+      } catch (err) {
+        showToast("❌ " + err.message, true);
+      }
+    }
+
+    async function deleteUser(id) {
+      try {
+        const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) throw new Error("Failed to delete user");
+        showToast("✅ User removed");
+        loadAdminData();
+      } catch (err) {
+        showToast("❌ " + err.message, true);
+      }
+    }
+
+    // Initial load
+    loadAdminData();
+  </script>
+</body>
+</html>

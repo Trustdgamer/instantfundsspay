@@ -36,6 +36,50 @@
       padding: 10px 20px; border-radius: 6px; cursor: pointer; transition: 0.3s;
     }
     header button:hover { background: #c0392b; }
+body {
+  background: #0f172a; /* dark slate background */
+  color: #f5f5f5;
+  overflow-x: hidden;
+}
+
+.bg-blobs {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  overflow: hidden;
+}
+
+.bg-blobs span {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(100px);
+  opacity: 0.6;
+  animation: moveBlobs 20s infinite alternate ease-in-out;
+}
+
+.bg-blobs span:nth-child(1) {
+  width: 400px; height: 400px;
+  background: #3498db;
+  top: -100px; left: -100px;
+}
+.bg-blobs span:nth-child(2) {
+  width: 350px; height: 350px;
+  background: #9b59b6;
+  bottom: -150px; right: -100px;
+}
+.bg-blobs span:nth-child(3) {
+  width: 300px; height: 300px;
+  background: #f39c12;
+  top: 50%; left: 40%;
+}
+
+@keyframes moveBlobs {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(50px, -50px) scale(1.2); }
+}
 
     /* Cards */
     .card {
@@ -110,6 +154,12 @@
   </style>
 </head>
 <body>
+  <div class="bg-blobs">
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
+
   <div class="container" id="admin-dashboard">
     <header>
       <h2>Admin Dashboard - InstantFundsPay</h2>
@@ -172,12 +222,14 @@
   </div>
 
   <!-- 🧠 The full <head>, styles, and structure remain the same so we keep your layout as is -->
-<!-- Only the <script> section is modified below -->
+<!-- Only the <scr> section is modified below -->
 <script>
+  let selectedChatUser = null;
+  let lastMessageCounts = {}; // track counts per user
   const token = localStorage.getItem("token");
 
   if (!token) {
-    showToast("No token found. Please log in again.", true);
+    alert("No token found. Please log in again.");
     window.location.href = "/";
   }
 
@@ -186,67 +238,62 @@
     window.location.href = "/";
   }
 
-  // ✅ Toast Notification Helper
+  // ✅ Toast Notification
+
+  // ✅ Snackbar-style Toast (bottom slide-in)
   function showToast(message, error = false) {
     const toast = document.createElement("div");
-    toast.className = "toast";
-    toast.style.background = error ? "rgba(231,76,60,0.9)" : "rgba(52,152,219,0.9)";
+    toast.className = "snackbar";
+    toast.style.background = error
+      ? "rgba(231,76,60,0.95)"
+      : "rgba(52,152,219,0.95)";
     toast.innerText = message;
+
     document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 4000);
+
+    // Slide in
+    setTimeout(() => {
+      toast.classList.add("show");
+    }, 100);
+
+    // Remove after 4s
+    setTimeout(() => {
+      toast.classList.remove("show");
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
   }
 
-  // ✅ Upload Local Video
-  document.getElementById("uploadForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    try {
-      const res = await fetch("/api/admin/videos/upload", {
-        method: "POST",
-        body: formData,
-        headers: { Authorization: "Bearer " + token }
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
-      showToast("✅ Video uploaded!");
-      e.target.reset();
-      loadAdminData();
-    } catch (err) {
-      showToast("❌ " + err.message, true);
+  // ✅ Inject CSS once
+  const toastStyles = document.createElement("style");
+  toastStyles.innerHTML = `
+    .snackbar {
+      visibility: hidden;
+      min-width: 250px;
+      margin-left: -125px;
+      background: rgba(52,152,219,0.95);
+      color: #fff;
+      text-align: center;
+      border-radius: 10px;
+      padding: 14px;
+      position: fixed;
+      z-index: 9999;
+      left: 50%;
+      bottom: -80px;
+      font-size: 15px;
+      transition: bottom 0.3s ease, visibility 0.3s ease;
     }
-  });
-
-  // ✅ Add YouTube Video
-  document.getElementById("youtubeForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const title = e.target.title.value;
-    const url = e.target.url.value;
-    try {
-      const res = await fetch("/api/admin/videos/youtube", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token
-        },
-        body: JSON.stringify({ title, url })
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || "YouTube add failed");
-      showToast("✅ YouTube video added!");
-      e.target.reset();
-      loadAdminData();
-    } catch (err) {
-      showToast("❌ " + err.message, true);
+    .snackbar.show {
+      visibility: visible;
+      bottom: 30px; /* slides up */
     }
-  });
+  `;
+  document.head.appendChild(toastStyles);
 
   // ✅ Load Videos & Users
   async function loadAdminData() {
     try {
-      // Load Videos
-      const videosRes = await fetch("/api/admin/videos", {
-        headers: { Authorization: "Bearer " + token }
-      });
+      // Videos
+      const videosRes = await fetch("/api/admin/videos", { headers: { Authorization: "Bearer " + token } });
       const videos = await videosRes.json();
       const videoList = document.getElementById("admin-video-list");
       videoList.innerHTML = "";
@@ -257,215 +304,129 @@
         const media = v.url.includes("youtube.com") || v.url.includes("youtu.be")
           ? `<iframe src="${v.url.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`
           : `<video src="${v.url}" controls></video>`;
-
-        card.innerHTML = `
-          ${media}
-          <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
-        `;
+        card.innerHTML = `${media}<button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>`;
         videoList.appendChild(card);
       });
 
-      // Load Users
-      const usersRes = await fetch("/api/admin/users", {
-        headers: { Authorization: "Bearer " + token }
-      });
+      // Users
+      const usersRes = await fetch("/api/admin/users", { headers: { Authorization: "Bearer " + token } });
       const users = await usersRes.json();
       const userList = document.getElementById("user-list");
+      const select = document.getElementById("chatUserSelect");
       userList.innerHTML = "";
+      select.innerHTML = "<option value=''>-- Select User --</option>";
+
       users.forEach(u => {
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${u.email}</td>
           <td>${u.role}</td>
-          <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>
-        `;
+          <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>`;
         userList.appendChild(row);
+
+        const opt = document.createElement("option");
+        opt.value = u.email;
+        opt.textContent = u.email;
+        select.appendChild(opt);
       });
-
     } catch (err) {
-      showToast("❌ Error loading admin data: " + err.message, true);
+      showToast("❌ Error loading data: " + err.message, true);
     }
   }
 
-  // ✅ Now Moved Outside
+  // ✅ Chat
+  async function loadChatMessages(userEmail) {
+    if (!userEmail) return;
 
-  // ✅ Chat logic
-async function loadChatMessages(userEmail) {
-  if (!userEmail) return;
-
-  const messagesDiv = document.getElementById("chatMessages");
-  messagesDiv.innerHTML = "<em>Loading...</em>";
-
-  try {
-    const res = await fetch(`/api/chat/messages/${userEmail}`, {
-      headers: { Authorization: "Bearer " + token }
-    });
-    if (!res.ok) throw new Error("Failed to load messages");
-
-    const messages = await res.json();
-
-    if (!messages.length) {
-      messagesDiv.innerHTML = "<p>No messages yet.</p>";
-      return;
-    }
-
-    messagesDiv.innerHTML = "";
-    messages.forEach(msg => {
-      const bubble = document.createElement("div");
-      bubble.textContent = `${msg.sender}: ${msg.message}`;
-      bubble.style.marginBottom = "8px";
-      bubble.style.padding = "6px 10px";
-      bubble.style.borderRadius = "8px";
-      bubble.style.background = msg.sender === "admin" ? "#3498db" : "#2ecc71";
-      bubble.style.color = "#fff";
-      bubble.style.textAlign = msg.sender === "admin" ? "right" : "left";
-      messagesDiv.appendChild(bubble);
-    });
-
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  } catch (err) {
-    messagesDiv.innerHTML = "<p>Failed to load chat.</p>";
-    showToast("❌ Chat load error: " + err.message, true);
-    console.error(err);
-  }
-}
-
-  // ✅ Also moved out
-
-
-
-// Load admin chat messages (only admin fetches all messages sent to admin)
-async function loadAdminChatMessages() {
-  const messagesDiv = document.getElementById("chatMessages");
-  messagesDiv.innerHTML = "<em>Loading messages...</em>";
-
-  try {
-    const res = await fetch("/api/chat/admin-messages", {
-      headers: { Authorization: "Bearer " + token }
-    });
-    if (!res.ok) throw new Error("Failed to load messages");
-
-    const messages = await res.json();
-
-    if (!messages.length) {
-      messagesDiv.innerHTML = "<p>No messages yet.</p>";
-      return;
-    }
-
-    messagesDiv.innerHTML = "";
-    messages.forEach(msg => {
-      const bubble = document.createElement("div");
-      bubble.textContent = `${msg.sender}: ${msg.message}`;
-      bubble.style.marginBottom = "8px";
-      bubble.style.padding = "6px 10px";
-      bubble.style.borderRadius = "8px";
-      bubble.style.background = msg.sender === "admin" ? "#3498db" : "#2ecc71";
-      bubble.style.color = "#fff";
-      bubble.style.textAlign = msg.sender === "admin" ? "right" : "left";
-      messagesDiv.appendChild(bubble);
-    });
-
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-  } catch (err) {
-    messagesDiv.innerHTML = "<p>Failed to load chat.</p>";
-    showToast("❌ Chat load error: " + err.message, true);
-    console.error(err);
-  }
-}
-
-// Send a message from admin to a user
-async function sendAdminMessage() {
-  const email = document.getElementById("chatUserSelect").value.trim();
-  const msg = document.getElementById("adminMessageInput").value.trim();
-
-  if (!email || !msg) {
-    showToast("Please select a user and type a message.", true);
-    return;
-  }
-
-  try {
-    const res = await fetch(`/api/chat/messages/${email}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer ' + token
-      },
-      body: JSON.stringify({ message: msg })
-    });
-
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || "Failed to send");
-
-    showToast("✅ Message sent");
-    document.getElementById("adminMessageInput").value = "";
-
-    // Refresh messages for that user after sending
-    loadChatMessages(email);
-  } catch (err) {
-    showToast("❌ " + err.message, true);
-    console.error("Failed to send message:", err);
-  }
-}
-
-// When admin selects a user, show messages from that user only (optional, if you want to filter)
-document.getElementById("chatUserSelect").addEventListener("change", (e) => {
-  const selectedEmail = e.target.value;
-  loadChatMessages(selectedEmail);
-});
-
-
-// Load users into dropdown (your existing function is fine)
-async function loadChatUsers() {
-  try {
-    const res = await fetch("/api/admin/users", {
-      headers: { Authorization: "Bearer " + token }
-    });
-    const users = await res.json();
-    const select = document.getElementById("chatUserSelect");
-    select.innerHTML = "<option value=''>-- Select User --</option>";
-    users.forEach(user => {
-      const opt = document.createElement("option");
-      opt.value = user.email;
-      opt.textContent = user.email;
-      select.appendChild(opt);
-    });
-  } catch (err) {
-    showToast("❌ Could not load users for chat", true);
-  }
-}
-
-  // ✅ Delete handlers
-  async function deleteVideo(id) {
     try {
-      const res = await fetch(`/api/admin/videos/${id}`, {
-        method: "DELETE",
+      const res = await fetch(`/api/chat/messages/${userEmail}`, {
         headers: { Authorization: "Bearer " + token }
       });
-      if (!res.ok) throw new Error("Failed to delete video");
-      showToast("✅ Video deleted");
-      loadAdminData();
+      if (!res.ok) throw new Error("Failed to load messages");
+
+      const messages = await res.json();
+
+      // ✅ Notify if new message from this user
+      if (lastMessageCounts[userEmail] !== undefined && messages.length > lastMessageCounts[userEmail]) {
+        if (selectedChatUser !== userEmail) {
+          showToast(`📩 New message from ${userEmail}`);
+        }
+      }
+      lastMessageCounts[userEmail] = messages.length;
+
+      // ✅ Render
+      if (selectedChatUser === userEmail) {
+        const messagesDiv = document.getElementById("chatMessages");
+        messagesDiv.innerHTML = "";
+        messages.forEach(msg => {
+          const bubble = document.createElement("div");
+          bubble.textContent = `${msg.sender}: ${msg.message}`;
+          bubble.style.marginBottom = "8px";
+          bubble.style.padding = "6px 10px";
+          bubble.style.borderRadius = "8px";
+          bubble.style.background = msg.sender === "admin" ? "#3498db" : "#2ecc71";
+          bubble.style.color = "#fff";
+          bubble.style.textAlign = msg.sender === "admin" ? "right" : "left";
+          messagesDiv.appendChild(bubble);
+        });
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+    } catch (err) {
+      console.error("Chat load error", err);
+    }
+  }
+
+  async function sendAdminMessage() {
+    const email = document.getElementById("chatUserSelect").value.trim();
+    const msg = document.getElementById("adminMessageInput").value.trim();
+    if (!email || !msg) return showToast("Please select a user and type a message.", true);
+
+    try {
+      const res = await fetch(`/api/chat/messages/${email}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ message: msg })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Failed to send");
+      showToast("✅ Message sent");
+      document.getElementById("adminMessageInput").value = "";
+      loadChatMessages(email);
     } catch (err) {
       showToast("❌ " + err.message, true);
     }
+  }
+
+  document.getElementById("chatUserSelect").addEventListener("change", e => {
+    selectedChatUser = e.target.value || null;
+    if (selectedChatUser) loadChatMessages(selectedChatUser);
+    else document.getElementById("chatMessages").innerHTML = "<p>No user selected.</p>";
+  });
+
+  // ✅ Delete
+  async function deleteVideo(id) {
+    await fetch(`/api/admin/videos/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
+    showToast("✅ Video deleted");
+    loadAdminData();
   }
 
   async function deleteUser(id) {
-    try {
-      const res = await fetch(`/api/admin/users/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: "Bearer " + token }
-      });
-      if (!res.ok) throw new Error("Failed to delete user");
-      showToast("✅ User removed");
-      loadAdminData();
-    } catch (err) {
-      showToast("❌ " + err.message, true);
-    }
+    await fetch(`/api/admin/users/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
+    showToast("✅ User removed");
+    loadAdminData();
   }
 
-  // ✅ Final: Load data on start
+  // ✅ Polling every 5s for all users
+  setInterval(async () => {
+    const select = document.getElementById("chatUserSelect");
+    Array.from(select.options).forEach(opt => {
+      if (opt.value) loadChatMessages(opt.value);
+    });
+  }, 5000);
+
+  // Init
   loadAdminData();
-  loadChatUsers();
 </script>
+
 </body>
 </html>

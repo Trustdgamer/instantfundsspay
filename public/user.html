@@ -222,6 +222,36 @@
   font-size: 14px;
   color: #fff;
 }
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  min-height: 100vh;
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  
+  /* ✅ Gradient with animated overlay */
+  background: linear-gradient(135deg, var(--bg1), var(--bg2));
+  background-attachment: fixed;
+  position: relative;
+}
+
+/* Subtle floating particles */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle at 10% 20%, rgba(255,255,255,0.05) 0%, transparent 60%),
+              radial-gradient(circle at 90% 80%, rgba(255,255,255,0.04) 0%, transparent 60%);
+  animation: floatBg 12s ease-in-out infinite alternate;
+  z-index: -1;
+}
+
+@keyframes floatBg {
+  0% { transform: translateY(0px) translateX(0px); }
+  100% { transform: translateY(-20px) translateX(20px); }
+}
 
 .chatMsg {
   margin-bottom: 8px;
@@ -355,6 +385,95 @@
   <!-- Spinner & Toasts -->
   <div class="spinner" id="spinner"></div>
   <div class="toast-container" id="toasts"></div>
+
+<!-- Floating Chat -->
+<div id="chatIcon" title="Chat with Admin">💬</div>
+
+<div id="chatBox">
+  <div id="chatHeader">
+    Chat with Admin 
+    <button id="closeChat">×</button>
+  </div>
+  <div id="chatMessages"></div>
+  <div id="chatInputWrapper">
+    <input type="text" id="chatInput" placeholder="Type a message..." />
+    <button id="sendChat">➤</button>
+  </div>
+</div>
+
+<script>
+  const chatIcon = document.getElementById("chatIcon");
+  const chatBox = document.getElementById("chatBox");
+  const closeChat = document.getElementById("closeChat");
+  const chatMessages = document.getElementById("chatMessages");
+  const chatInput = document.getElementById("chatInput");
+  const sendChat = document.getElementById("sendChat");
+
+  // Toggle chat box
+  chatIcon.addEventListener("click", () => chatBox.classList.add("open"));
+  closeChat.addEventListener("click", () => chatBox.classList.remove("open"));
+
+  // Render message
+  function appendMessage(text, sender) {
+    const msg = document.createElement("div");
+    msg.classList.add("chatMsg", sender === "admin" ? "admin" : "user");
+    msg.textContent = text;
+    chatMessages.appendChild(msg);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+
+  // Send message (user → admin)
+  async function sendMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    appendMessage(text, "user");
+    chatInput.value = "";
+
+    try {
+      await fetch("/api/chat/send-to-admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token, // token from login
+        },
+        body: JSON.stringify({ message: text }),
+      });
+    } catch (err) {
+      console.error("Send failed:", err);
+    }
+  }
+
+  sendChat.addEventListener("click", sendMessage);
+  chatInput.addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+
+  // Load history (user ↔ admin)
+  async function loadMessages() {
+    try {
+      const res = await fetch("/api/chat/my-messages", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const data = await res.json();
+
+      chatMessages.innerHTML = ""; // clear old
+      data.forEach(m => {
+        const sender = m.sender === "adminfunds@gmail.com" ? "admin" : "user";
+        appendMessage(m.message, sender);
+      });
+    } catch (err) {
+      console.error("History load failed:", err);
+    }
+  }
+
+  // Poll every 5s for new messages
+  setInterval(loadMessages, 5000);
+
+  loadMessages();
+</script>
+
+
 
 <script>
   /* ======== Auth Guard ======== */

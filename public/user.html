@@ -170,9 +170,144 @@
       .sidebar.active { left: 0; }
       .sidebar.active ~ .main { margin-left: 0; }
     }
+    #chatIcon {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  background: var(--accent);
+  color: #111;
+  padding: 12px 14px;
+  border-radius: 50%;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  font-size: 20px;
+  z-index: 1500;
+}
+
+#chatBox {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 300px;
+  max-height: 400px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+  transform: scale(0);
+  transform-origin: bottom right;
+  transition: transform 0.3s ease;
+  z-index: 2000;
+}
+
+#chatBox.open { transform: scale(1); }
+
+#chatHeader {
+  background: var(--accent);
+  color: #111;
+  padding: 10px 14px;
+  font-weight: bold;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+#chatMessages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+  font-size: 14px;
+  color: #fff;
+}
+
+.chatMsg {
+  margin-bottom: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  max-width: 80%;
+  word-wrap: break-word;
+}
+
+.chatMsg.user {
+  background: var(--ok);
+  color: #111;
+  align-self: flex-end;
+}
+
+.chatMsg.admin {
+  background: var(--btn1);
+  color: #fff;
+  align-self: flex-start;
+}
+
+#chatInputWrapper {
+  display: flex;
+  border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+#chatInput {
+  flex: 1;
+  padding: 10px;
+  background: rgba(255,255,255,0.1);
+  border: none;
+  color: #fff;
+  outline: none;
+}
+
+#sendChat {
+  padding: 10px;
+  background: var(--btn2);
+  border: none;
+  color: #111;
+  cursor: pointer;
+}
+
   </style>
 </head>
 <body>
+  <!-- Chat Icon -->
+   <!--<div id="chatIcon" title="Chat with Admin">💬</div>
+ 
+    <div id="chatBox">
+      <div id="chatHeader">Admin Chat <button id="closeChat">×</button></div>
+      <div id="chatMessages"></div>
+      <div id="chatInputWrapper">
+        <input type="text" id="chatInput" placeholder="Type a message..." />
+        <button id="sendChat">➤</button>
+      </div>
+    </div>-->
+
+
+  
+  
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+  let youtubePlayers = {};
+
+  // Called automatically by YouTube API after it loads
+  function onYouTubeIframeAPIReady() {
+    const iframes = document.querySelectorAll("iframe[id^='yt-']");
+    iframes.forEach(iframe => {
+      const playerId = iframe.id;
+      const videoId = playerId.split("yt-")[1];
+      const btnId = `like-${videoId}`;
+      const player = new YT.Player(playerId, {
+        events: {
+          'onStateChange': (event) => {
+            if (event.data === YT.PlayerState.ENDED) {
+              const likeBtn = document.getElementById(btnId);
+              if (likeBtn) likeBtn.style.display = "flex";
+            }
+          }
+        }
+      });
+      youtubePlayers[playerId] = player;
+    });
+  }
+</script>
 
   <!-- Settings Sidebar -->
   <aside class="sidebar" id="settingsPanel">
@@ -299,6 +434,7 @@
       const data = await res.json();
       document.getElementById("userName").textContent = (data.email || "").split("@")[0];
       document.getElementById("userEmail").textContent = data.email || "";
+      localStorage.setItem("userEmail", data.email); // 🔥 Add this
       likedVideos = (data.likes || []).map(l => l.videoId);
     }catch(e){
       showToast('err', 'Failed to load user');
@@ -324,30 +460,67 @@
   }
 
   /* ======== Render ======== */
-  function renderVideos(videos) {
-    videoContainer.innerHTML = "";
-    videos.forEach(video => {
-      if (!video || !video._id || !video.url) return;
-      const card = document.createElement("div");
-      card.classList.add("video-card");
-      const id = extractYouTubeId(video.url);
-      const embedContent = id
-        ? `<iframe width="100%" height="200" src="https://www.youtube.com/embed/${id}" frameborder="0" allowfullscreen></iframe>`
-        : `<video width="100%" height="200" controls><source src="${video.url}" type="video/mp4"></video>`;
-      const liked = likedVideos.includes(video._id);
-      card.innerHTML = `
-        <h4>${video.title || "Untitled"}</h4>
-        ${embedContent}
-        <div class="video-actions">
+function renderVideos(videos) {
+  videoContainer.innerHTML = "";
+  videos.forEach(video => {
+    if (!video || !video._id || !video.url) return;
+
+    const card = document.createElement("div");
+    card.classList.add("video-card");
+
+    const ytId = extractYouTubeId(video.url);
+    const liked = likedVideos.includes(video._id);
+    const likeBtnId = `like-${video._id}`;
+    const safeTitle = (video.title || "Untitled").replace(/'/g, "\\'");
+    const safeUrl = video.url.replace(/'/g, "\\'");
+
+    let embedContent = "";
+
+    if (ytId) {
+      embedContent = `
+        <iframe id="yt-${video._id}" width="100%" height="200"
+          src="https://www.youtube.com/embed/${ytId}?enablejsapi=1"
+          frameborder="0" allowfullscreen></iframe>
+        <div class="video-actions" id="${likeBtnId}" style="display:none;">
           <button class="like-btn ${liked ? "liked" : ""}"
-                  onclick="toggleLike('${video._id}','${video.title?.replace(/'/g, "\\'") || ""}','${video.url?.replace(/'/g, "\\'") || ""}', this)">
+            onclick="toggleLike('${video._id}', '${safeTitle}', '${safeUrl}', this)">
             ${liked ? "💚 Liked" : "❤ Like"}
           </button>
         </div>`;
-      videoContainer.appendChild(card);
-      requestAnimationFrame(() => card.classList.add("show"));
-    });
+    } else {
+      embedContent = `
+        <video width="100%" height="200" controls id="vid-${video._id}">
+          <source src="${video.url}" type="video/mp4">
+        </video>
+        <div class="video-actions" id="${likeBtnId}" style="display:none;">
+          <button class="like-btn ${liked ? "liked" : ""}"
+            onclick="toggleLike('${video._id}', '${safeTitle}', '${safeUrl}', this)">
+            ${liked ? "💚 Liked" : "❤ Like"}
+          </button>
+        </div>`;
+    }
+
+    card.innerHTML = `${embedContent}`;
+    videoContainer.appendChild(card);
+    requestAnimationFrame(() => card.classList.add("show"));
+
+    // If local video, hook into 'ended' event
+    if (!ytId) {
+      const videoEl = card.querySelector(`#vid-${video._id}`);
+      const likeEl = card.querySelector(`#${likeBtnId}`);
+      if (videoEl && likeEl) {
+        videoEl.addEventListener("ended", () => {
+          likeEl.style.display = "flex";
+        });
+      }
+    }
+  });
+
+  // If YouTube API is already loaded, reinitialize players
+  if (typeof YT !== "undefined" && YT.loaded) {
+    onYouTubeIframeAPIReady();
   }
+}
 
   /* ======== Actions ======== */
   async function toggleLike(videoId, title, url, btn) {
@@ -386,6 +559,12 @@
       setActiveBottom(navHistory);
     }
   }
+
+
+
+
+// Optional: send on Enter key press
+
 
   searchBar.addEventListener("input", () => {
     const query = searchBar.value.toLowerCase();
@@ -440,10 +619,42 @@
   navLogout.addEventListener('click', logout);
 
   /* ======== Init ======== */
-  (async () => {
+  /* ======== Init ======== */
+(async () => {
+  try {
     await loadUser();
+  } catch (err) {
+    console.error("Failed to load user:", err);
+    return; // Stop further loading if user load fails
+  }
+
+  try {
     await loadVideos();
-  })();
+  } catch (err) {
+    console.error("Failed to load videos:", err);
+    // You can choose to continue or stop here depending on your app logic
+  }
+
+  // ✅ Load previous chat messages after user info is ready
+  try {
+    const userEmail = localStorage.getItem("userEmail") || document.getElementById("userEmail")?.textContent;
+    if (!userEmail) {
+      console.warn("No user email found, skipping chat history load");
+      return;
+    }
+
+   const res = await fetch("/api/my-messages", {
+  headers: {
+    Authorization: "Bearer " + token,
+  }
+});
+
+  } catch (err) {
+    console.error("Failed to load chat history:", err);
+  }
+})();
+
+
 </script>
 </body>
 </html>

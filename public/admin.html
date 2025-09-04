@@ -143,6 +143,17 @@
       <h3>All Videos</h3>
       <div class="video-grid" id="admin-video-list"></div>
     </section>
+    <!-- Admin Chat Section -->
+<section class="card chat">
+  <h3>Chat with Users</h3>
+  <label for="chatUserSelect">Select User:</label>
+  <select id="chatUserSelect"></select>
+
+  <div id="chatMessages" style="max-height: 300px; overflow-y: auto; margin: 15px 0; background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px;"></div>
+
+  <textarea id="adminMessageInput" placeholder="Type your message..."></textarea>
+  <button class="btn-primary" onclick="sendAdminMessage()">Send Message</button>
+</section>
 
     <!-- Manage Users -->
     <section class="card users">
@@ -160,133 +171,301 @@
     </section>
   </div>
 
-  <script>
-    const token = localStorage.getItem("token");
+  <!-- 🧠 The full <head>, styles, and structure remain the same so we keep your layout as is -->
+<!-- Only the <script> section is modified below -->
+<script>
+  const token = localStorage.getItem("token");
 
-    if (!token) {
-      showToast("No token found. Please log in again.", true);
-      window.location.href = "/";
+  if (!token) {
+    showToast("No token found. Please log in again.", true);
+    window.location.href = "/";
+  }
+
+  function logout() {
+    localStorage.removeItem("token");
+    window.location.href = "/";
+  }
+
+  // ✅ Toast Notification Helper
+  function showToast(message, error = false) {
+    const toast = document.createElement("div");
+    toast.className = "toast";
+    toast.style.background = error ? "rgba(231,76,60,0.9)" : "rgba(52,152,219,0.9)";
+    toast.innerText = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 4000);
+  }
+
+  // ✅ Upload Local Video
+  document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    try {
+      const res = await fetch("/api/admin/videos/upload", {
+        method: "POST",
+        body: formData,
+        headers: { Authorization: "Bearer " + token }
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
+      showToast("✅ Video uploaded!");
+      e.target.reset();
+      loadAdminData();
+    } catch (err) {
+      showToast("❌ " + err.message, true);
+    }
+  });
+
+  // ✅ Add YouTube Video
+  document.getElementById("youtubeForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const title = e.target.title.value;
+    const url = e.target.url.value;
+    try {
+      const res = await fetch("/api/admin/videos/youtube", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token
+        },
+        body: JSON.stringify({ title, url })
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) throw new Error(data.error || "YouTube add failed");
+      showToast("✅ YouTube video added!");
+      e.target.reset();
+      loadAdminData();
+    } catch (err) {
+      showToast("❌ " + err.message, true);
+    }
+  });
+
+  // ✅ Load Videos & Users
+  async function loadAdminData() {
+    try {
+      // Load Videos
+      const videosRes = await fetch("/api/admin/videos", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const videos = await videosRes.json();
+      const videoList = document.getElementById("admin-video-list");
+      videoList.innerHTML = "";
+
+      videos.forEach(v => {
+        const card = document.createElement("div");
+        card.classList.add("video-card");
+        const media = v.url.includes("youtube.com") || v.url.includes("youtu.be")
+          ? `<iframe src="${v.url.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`
+          : `<video src="${v.url}" controls></video>`;
+
+        card.innerHTML = `
+          ${media}
+          <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
+        `;
+        videoList.appendChild(card);
+      });
+
+      // Load Users
+      const usersRes = await fetch("/api/admin/users", {
+        headers: { Authorization: "Bearer " + token }
+      });
+      const users = await usersRes.json();
+      const userList = document.getElementById("user-list");
+      userList.innerHTML = "";
+      users.forEach(u => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${u.email}</td>
+          <td>${u.role}</td>
+          <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>
+        `;
+        userList.appendChild(row);
+      });
+
+    } catch (err) {
+      showToast("❌ Error loading admin data: " + err.message, true);
+    }
+  }
+
+  // ✅ Now Moved Outside
+
+  // ✅ Chat logic
+async function loadChatMessages(userEmail) {
+  if (!userEmail) return;
+
+  const messagesDiv = document.getElementById("chatMessages");
+  messagesDiv.innerHTML = "<em>Loading...</em>";
+
+  try {
+    const res = await fetch(`/api/chat/messages/${userEmail}`, {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!res.ok) throw new Error("Failed to load messages");
+
+    const messages = await res.json();
+
+    if (!messages.length) {
+      messagesDiv.innerHTML = "<p>No messages yet.</p>";
+      return;
     }
 
-    function logout() {
-      localStorage.removeItem("token");
-      window.location.href = "/";
-    }
-
-    // Toast helper
-    function showToast(message, error = false) {
-      const toast = document.createElement("div");
-      toast.className = "toast";
-      toast.style.background = error ? "rgba(231,76,60,0.9)" : "rgba(52,152,219,0.9)";
-      toast.innerText = message;
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 4000);
-    }
-
-    // Upload local video
-    document.getElementById("uploadForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target);
-      try {
-        const res = await fetch("/api/admin/videos/upload", {
-          method: "POST",
-          body: formData,
-          headers: { Authorization: "Bearer " + token }
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) throw new Error(data.error || "Upload failed");
-        showToast("✅ Video uploaded!");
-        e.target.reset(); loadAdminData();
-      } catch (err) {
-        showToast("❌ " + err.message, true);
-      }
+    messagesDiv.innerHTML = "";
+    messages.forEach(msg => {
+      const bubble = document.createElement("div");
+      bubble.textContent = `${msg.sender}: ${msg.message}`;
+      bubble.style.marginBottom = "8px";
+      bubble.style.padding = "6px 10px";
+      bubble.style.borderRadius = "8px";
+      bubble.style.background = msg.sender === "admin" ? "#3498db" : "#2ecc71";
+      bubble.style.color = "#fff";
+      bubble.style.textAlign = msg.sender === "admin" ? "right" : "left";
+      messagesDiv.appendChild(bubble);
     });
 
-    // Add YouTube video
-    document.getElementById("youtubeForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = e.target.title.value;
-      const url = e.target.url.value;
-      try {
-        const res = await fetch("/api/admin/videos/youtube", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
-          body: JSON.stringify({ title, url })
-        });
-        const data = await res.json();
-        if (!res.ok || data.error) throw new Error(data.error || "YouTube add failed");
-        showToast("✅ YouTube video added!");
-        e.target.reset(); loadAdminData();
-      } catch (err) {
-        showToast("❌ " + err.message, true);
-      }
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  } catch (err) {
+    messagesDiv.innerHTML = "<p>Failed to load chat.</p>";
+    showToast("❌ Chat load error: " + err.message, true);
+    console.error(err);
+  }
+}
+
+  // ✅ Also moved out
+
+
+
+// Load admin chat messages (only admin fetches all messages sent to admin)
+async function loadAdminChatMessages() {
+  const messagesDiv = document.getElementById("chatMessages");
+  messagesDiv.innerHTML = "<em>Loading messages...</em>";
+
+  try {
+    const res = await fetch("/api/chat/admin-messages", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    if (!res.ok) throw new Error("Failed to load messages");
+
+    const messages = await res.json();
+
+    if (!messages.length) {
+      messagesDiv.innerHTML = "<p>No messages yet.</p>";
+      return;
+    }
+
+    messagesDiv.innerHTML = "";
+    messages.forEach(msg => {
+      const bubble = document.createElement("div");
+      bubble.textContent = `${msg.sender}: ${msg.message}`;
+      bubble.style.marginBottom = "8px";
+      bubble.style.padding = "6px 10px";
+      bubble.style.borderRadius = "8px";
+      bubble.style.background = msg.sender === "admin" ? "#3498db" : "#2ecc71";
+      bubble.style.color = "#fff";
+      bubble.style.textAlign = msg.sender === "admin" ? "right" : "left";
+      messagesDiv.appendChild(bubble);
     });
 
-    // Load all videos and users
-    async function loadAdminData() {
-      try {
-        // Videos
-        const videosRes = await fetch("/api/admin/videos", { headers: { Authorization: "Bearer " + token } });
-        const videos = await videosRes.json();
-        const videoList = document.getElementById("admin-video-list");
-        videoList.innerHTML = "";
-        videos.forEach(v => {
-          const card = document.createElement("div");
-          card.classList.add("video-card");
-          const media = v.url.includes("youtube.com") || v.url.includes("youtu.be") ?
-                        `<iframe src="${v.url.replace("watch?v=","embed/")}" frameborder="0" allowfullscreen></iframe>` :
-                        `<video src="${v.url}" controls></video>`;
-          card.innerHTML = `
-            <h4>${v.title}</h4>
-            ${media}
-            <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
-          `;
-          videoList.appendChild(card);
-        });
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  } catch (err) {
+    messagesDiv.innerHTML = "<p>Failed to load chat.</p>";
+    showToast("❌ Chat load error: " + err.message, true);
+    console.error(err);
+  }
+}
 
-        // Users
-        const usersRes = await fetch("/api/admin/users", { headers: { Authorization: "Bearer " + token } });
-        const users = await usersRes.json();
-        const userList = document.getElementById("user-list");
-        userList.innerHTML = "";
-        users.forEach(u => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${u.email}</td>
-            <td>${u.role}</td>
-            <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>
-          `;
-          userList.appendChild(row);
-        });
-      } catch (err) {
-        showToast("❌ Error loading admin data: " + err.message, true);
-      }
+// Send a message from admin to a user
+async function sendAdminMessage() {
+  const email = document.getElementById("chatUserSelect").value.trim();
+  const msg = document.getElementById("adminMessageInput").value.trim();
+
+  if (!email || !msg) {
+    showToast("Please select a user and type a message.", true);
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/chat/messages/${email}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: 'Bearer ' + token
+      },
+      body: JSON.stringify({ message: msg })
+    });
+
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Failed to send");
+
+    showToast("✅ Message sent");
+    document.getElementById("adminMessageInput").value = "";
+
+    // Refresh messages for that user after sending
+    loadChatMessages(email);
+  } catch (err) {
+    showToast("❌ " + err.message, true);
+    console.error("Failed to send message:", err);
+  }
+}
+
+// When admin selects a user, show messages from that user only (optional, if you want to filter)
+document.getElementById("chatUserSelect").addEventListener("change", (e) => {
+  const selectedEmail = e.target.value;
+  loadChatMessages(selectedEmail);
+});
+
+
+// Load users into dropdown (your existing function is fine)
+async function loadChatUsers() {
+  try {
+    const res = await fetch("/api/admin/users", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const users = await res.json();
+    const select = document.getElementById("chatUserSelect");
+    select.innerHTML = "<option value=''>-- Select User --</option>";
+    users.forEach(user => {
+      const opt = document.createElement("option");
+      opt.value = user.email;
+      opt.textContent = user.email;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    showToast("❌ Could not load users for chat", true);
+  }
+}
+
+  // ✅ Delete handlers
+  async function deleteVideo(id) {
+    try {
+      const res = await fetch(`/api/admin/videos/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!res.ok) throw new Error("Failed to delete video");
+      showToast("✅ Video deleted");
+      loadAdminData();
+    } catch (err) {
+      showToast("❌ " + err.message, true);
     }
+  }
 
-    async function deleteVideo(id) {
-      try {
-        const res = await fetch(`/api/admin/videos/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
-        if (!res.ok) throw new Error("Failed to delete video");
-        showToast("✅ Video deleted");
-        loadAdminData();
-      } catch (err) {
-        showToast("❌ " + err.message, true);
-      }
+  async function deleteUser(id) {
+    try {
+      const res = await fetch(`/api/admin/users/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+      });
+      if (!res.ok) throw new Error("Failed to delete user");
+      showToast("✅ User removed");
+      loadAdminData();
+    } catch (err) {
+      showToast("❌ " + err.message, true);
     }
+  }
 
-    async function deleteUser(id) {
-      try {
-        const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
-        if (!res.ok) throw new Error("Failed to delete user");
-        showToast("✅ User removed");
-        loadAdminData();
-      } catch (err) {
-        showToast("❌ " + err.message, true);
-      }
-    }
-
-    // Initial load
-    loadAdminData();
-  </script>
+  // ✅ Final: Load data on start
+  loadAdminData();
+  loadChatUsers();
+</script>
 </body>
 </html>

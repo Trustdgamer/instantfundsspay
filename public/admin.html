@@ -290,49 +290,97 @@ body {
   document.head.appendChild(toastStyles);
 
   // ✅ Load Videos & Users
-  async function loadAdminData() {
-    try {
-      // Videos
-      const videosRes = await fetch("/api/admin/videos", { headers: { Authorization: "Bearer " + token } });
-      const videos = await videosRes.json();
-      const videoList = document.getElementById("admin-video-list");
-      videoList.innerHTML = "";
+ // ✅ Load Videos & Users
+// Load videos and their like stats
+async function loadVideos() {
+  try {
+    const videosRes = await fetch("/api/admin/videos", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const videos = await videosRes.json();
+    const videoList = document.getElementById("admin-video-list");
+    videoList.innerHTML = "";
 
-      videos.forEach(v => {
-        const card = document.createElement("div");
-        card.classList.add("video-card");
-        const media = v.url.includes("youtube.com") || v.url.includes("youtu.be")
-          ? `<iframe src="${v.url.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`
-          : `<video src="${v.url}" controls></video>`;
-        card.innerHTML = `${media}<button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>`;
-        videoList.appendChild(card);
-      });
+    // Fetch like stats
+    const stats = await fetch("/api/admin/video-stats", {
+      headers: { Authorization: "Bearer " + token }
+    }).then(res => res.json());
 
-      // Users
-      const usersRes = await fetch("/api/admin/users", { headers: { Authorization: "Bearer " + token } });
-      const users = await usersRes.json();
-      const userList = document.getElementById("user-list");
-      const select = document.getElementById("chatUserSelect");
-      userList.innerHTML = "";
-      select.innerHTML = "<option value=''>-- Select User --</option>";
+    videos.forEach(v => {
+      const card = document.createElement("div");
+      card.classList.add("video-card");
+      card.id = `video-${v._id}`;
 
-      users.forEach(u => {
-        const row = document.createElement("tr");
-        row.innerHTML = `
-          <td>${u.email}</td>
-          <td>${u.role}</td>
-          <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>`;
-        userList.appendChild(row);
+      const media = v.url.includes("youtube.com") || v.url.includes("youtu.be")
+        ? `<iframe src="${v.url.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`
+        : `<video src="${v.url}" controls></video>`;
 
-        const opt = document.createElement("option");
-        opt.value = u.email;
-        opt.textContent = u.email;
-        select.appendChild(opt);
-      });
-    } catch (err) {
-      showToast("❌ Error loading data: " + err.message, true);
-    }
+      const likeCount = stats[v._id] || 0;
+
+      card.innerHTML = `
+        ${media}
+        <h4>${v.title}</h4>
+        <p class="like-count">👍 ${likeCount} Likes</p>
+        <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
+      `;
+      videoList.appendChild(card);
+    });
+
+    // 🔄 Poll like stats every 5s
+    setInterval(async () => {
+      try {
+        const newStats = await fetch("/api/admin/video-stats", {
+          headers: { Authorization: "Bearer " + token }
+        }).then(res => res.json());
+
+        videos.forEach(v => {
+          const likeCount = newStats[v._id] || 0;
+          const card = document.getElementById(`video-${v._id}`);
+          if (card) {
+            card.querySelector(".like-count").textContent = `👍 ${likeCount} Likes`;
+          }
+        });
+      } catch (err) {
+        console.error("Error refreshing like stats:", err);
+      }
+    }, 5000);
+
+  } catch (err) {
+    showToast("❌ Error loading videos: " + err.message, true);
   }
+}
+
+
+// Load users
+async function loadUsers() {
+  try {
+    const usersRes = await fetch("/api/admin/users", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const users = await usersRes.json();
+    const userList = document.getElementById("user-list");
+    const select = document.getElementById("chatUserSelect");
+    userList.innerHTML = "";
+    select.innerHTML = "<option value=''>-- Select User --</option>";
+
+    users.forEach(u => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${u.email}</td>
+        <td>${u.role}</td>
+        <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>`;
+      userList.appendChild(row);
+
+      const opt = document.createElement("option");
+      opt.value = u.email;
+      opt.textContent = u.email;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    showToast("❌ Error loading users: " + err.message, true);
+  }
+}
+
 
   // ✅ Chat
   async function loadChatMessages(userEmail) {
@@ -425,7 +473,12 @@ body {
   }, 5000);
 
   // Init
-  loadAdminData();
+  // loadAdminData();
+  document.addEventListener("DOMContentLoaded", () => {
+  loadVideos();
+  loadUsers();
+});
+
 </script>
 
 </body>

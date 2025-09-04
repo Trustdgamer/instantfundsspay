@@ -45,6 +45,28 @@ router.post("/videos/upload", upload.single("video"), async (req, res) => {
   }
 });
 
+// Get like stats for all videos
+// Get like stats for all videos
+router.get("/video-stats", async (req, res) => {
+  try {
+    // Aggregate likes from all users
+    const users = await User.find({}, "likes"); // only get likes field
+    const likeMap = {};
+
+    users.forEach(u => {
+      (u.likes || []).forEach(like => {
+        likeMap[like.videoId] = (likeMap[like.videoId] || 0) + 1;
+      });
+    });
+
+    res.json(likeMap); // { videoId1: count, videoId2: count, ... }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 // ================= ADD YOUTUBE VIDEO =================
 router.post("/videos/youtube", async (req, res) => {
   try {

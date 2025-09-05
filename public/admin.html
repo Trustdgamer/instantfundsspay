@@ -352,8 +352,8 @@ function createLazyVideo(url, title = "") {
   const publicId = match ? match[1] : null;
 
   const thumbUrl = publicId
-    ? url.replace("/upload/", "/upload/w_400,h_225,c_fill,so_0/") + ".jpg"
-    : "https://via.placeholder.com/400x225?text=Video";
+  ? `https://res.cloudinary.com/dvra4pmc7/video/upload/w_400,h_225,c_fill,so_0/${publicId}.jpg`
+  : "https://via.placeholder.com/400x225?text=Video";
 
   return `
     <div class="lazy-video" data-url="${url}">

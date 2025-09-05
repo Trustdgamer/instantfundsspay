@@ -21,9 +21,12 @@ cloudinary.config({
 router.post("/videos/upload", upload.single("video"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
     const stream = cloudinary.uploader.upload_stream(
-      { resource_type: "video", folder: "myapp_videos" },
+  { 
+    resource_type: "video", 
+    folder: "myapp_videos",
+    timeout: 120000 // 2 minutes
+  },
       async (error, uploaded) => {
         if (error) return res.status(500).json({ error: "Cloudinary upload failed: " + error.message });
 

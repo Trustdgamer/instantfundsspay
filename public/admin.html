@@ -103,12 +103,42 @@ body {
 
     /* Video Grid */
     .video-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+    .lazy-video {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+.lazy-video img {
+  width: 100%;
+  border-radius: 8px;
+}
+.lazy-video .play-btn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0,0,0,0.6);
+  border: none;
+  color: white;
+  font-size: 2rem;
+  border-radius: 50%;
+  padding: 10px 15px;
+  cursor: pointer;
+}
+
     .video-card {
       background: rgba(0,0,0,0.5);
       border-radius: 10px; padding: 15px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.4);
       text-align: center; transition: transform 0.2s;
     }
+    .video-card iframe,
+.video-card video {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+}
+
     .video-card:hover { transform: scale(1.03); }
     .video-card h4 { margin-bottom: 10px; color: #f9d342; font-size: 1em; }
     .video-card video, .video-card iframe {
@@ -180,11 +210,10 @@ body {
     <!-- Add YouTube Video -->
     <section class="card upload">
       <h3>Add YouTube Video</h3>
-      <form id="youtubeForm">
-        <input type="text" name="title" placeholder="Video Title" />
-        <input type="text" name="url" placeholder="YouTube URL" required />
-        <button type="submit" class="btn-primary">Add YouTube Video</button>
-      </form>
+          <form id="youtubeForm">
+      <input type="text" id="youtube-url" placeholder="YouTube URL" required />
+      <button type="submit" class="btn-primary">Add YouTube Video</button>
+    </form>
       <p id="youtubeMessage"></p>
     </section>
 
@@ -292,6 +321,67 @@ body {
   // ✅ Load Videos & Users
  // ✅ Load Videos & Users
 // Load videos and their like stats
+
+// --- Helpers ---
+function getVideoId(url) {
+  try {
+    if (url.includes("shorts/")) {
+      return url.split("shorts/")[1].split("?")[0];
+    } else if (url.includes("watch?v=")) {
+      return url.split("watch?v=")[1].split("&")[0];
+    } else if (url.includes("youtu.be/")) {
+      return url.split("youtu.be/")[1].split("?")[0];
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function getEmbedUrl(url) {
+  const id = getVideoId(url);
+  return id ? `https://www.youtube.com/embed/${id}` : "";
+}
+
+function getThumbnailUrl(url) {
+  const id = getVideoId(url);
+  return id ? `https://img.youtube.com/vi/${id}/hqdefault.jpg` : "fallback.jpg";
+}
+function createLazyVideo(url, title = "") {
+  const match = url.match(/\/upload\/(?:v\d+\/)?([^\.]+)/);
+  const publicId = match ? match[1] : null;
+
+  const thumbUrl = publicId
+    ? url.replace("/upload/", "/upload/w_400,h_225,c_fill,so_0/") + ".jpg"
+    : "https://via.placeholder.com/400x225?text=Video";
+
+  return `
+    <div class="lazy-video" data-url="${url}">
+      <img src="${thumbUrl}" alt="${title}" loading="lazy"/>
+      <button class="play-btn">▶</button>
+    </div>
+  `;
+}
+
+
+function createLazyEmbed(url) {
+  const thumb = getThumbnailUrl(url);
+  return `
+    <div class="video-thumb" data-url="${url}" 
+         style="position:relative;cursor:pointer;">
+      <img src="${thumb}" style="width:100%;border-radius:8px;">
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+        background:rgba(0,0,0,0.7);color:white;font-size:24px;
+        padding:12px 18px;border-radius:50%;user-select:none;">
+        ▶
+      </div>
+    </div>
+  `;
+}
+
+// --- Modified loadVideos with thumbnails ---
+
+// ================== Main Function ==================
 async function loadVideos() {
   try {
     const videosRes = await fetch("/api/admin/videos", {
@@ -301,7 +391,6 @@ async function loadVideos() {
     const videoList = document.getElementById("admin-video-list");
     videoList.innerHTML = "";
 
-    // Fetch like stats
     const stats = await fetch("/api/admin/video-stats", {
       headers: { Authorization: "Bearer " + token }
     }).then(res => res.json());
@@ -311,15 +400,17 @@ async function loadVideos() {
       card.classList.add("video-card");
       card.id = `video-${v._id}`;
 
-      const media = v.url.includes("youtube.com") || v.url.includes("youtu.be")
-        ? `<iframe src="${v.url.replace("watch?v=", "embed/")}" frameborder="0" allowfullscreen></iframe>`
-        : `<video src="${v.url}" controls></video>`;
+      let media;
+      if (v.url.includes("youtube.com") || v.url.includes("youtu.be")) {
+        media = createLazyEmbed(v.url);
+      } else {
+        media = createLazyVideo(v.url, v.title);
+      }
 
       const likeCount = stats[v._id] || 0;
 
       card.innerHTML = `
         ${media}
-        <h4>${v.title}</h4>
         <p class="like-count">👍 ${likeCount} Likes</p>
         <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
       `;
@@ -349,6 +440,37 @@ async function loadVideos() {
     showToast("❌ Error loading videos: " + err.message, true);
   }
 }
+
+
+// --- Global click handler: replace thumb with iframe ---
+document.addEventListener("click", (e) => {
+  const thumb = e.target.closest(".video-thumb");
+  if (thumb) {
+    const url = thumb.getAttribute("data-url");
+    const iframe = document.createElement("iframe");
+    iframe.src = getEmbedUrl(url) + "?autoplay=1";
+    iframe.frameBorder = "0";
+    iframe.allow =
+      "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = true;
+    iframe.style.width = "100%";
+    iframe.style.height = "315px";
+    thumb.replaceWith(iframe);
+  }
+});
+
+// ✅ Lazy load for local videos
+document.addEventListener("click", (e) => {
+  const wrapper = e.target.closest(".lazy-video");
+  if (wrapper) {
+    const url = wrapper.dataset.url;
+    wrapper.innerHTML = `
+      <video src="${url}" controls autoplay></video>
+    `;
+  }
+});
+
+
 
 
 // Load users
@@ -444,6 +566,81 @@ async function loadUsers() {
       showToast("❌ " + err.message, true);
     }
   }
+document.getElementById("youtubeForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const urlInput = document.getElementById("youtube-url");
+  if (!urlInput) {
+    console.error("❌ youtube-url input not found in DOM");
+    return;
+  }
+
+  const url = urlInput.value.trim();
+  if (!url) return showToast("❌ Please enter a YouTube URL", true);
+
+  const res = await fetch("/api/admin/videos/youtube", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token,
+    },
+    body: JSON.stringify({ url }),
+  });
+
+  if (res.ok) {
+    showToast("✅ YouTube video added successfully");
+    e.target.reset();
+    loadVideos();
+  } else {
+    const err = await res.json();
+    showToast("❌ " + (err.message || "Failed to add YouTube video"), true);
+  }
+});
+// ================= Local Upload via Backend =================
+async function uploadVideo(file, title) {
+  const token = localStorage.getItem("token"); // you stored admin JWT after login
+
+  const formData = new FormData();
+  formData.append("video", file);       // 👈 must match upload.single("video")
+  formData.append("title", title);
+
+  const res = await fetch("/api/admin/videos/upload", {
+    method: "POST",
+    headers: {
+      Authorization: "Bearer " + token, // 👈 required for admin
+    },
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error("Upload failed: " + err.error);
+  }
+  return await res.json();
+}
+
+// ✅ Local Upload to Cloudinary
+const cloudName = "dvra4pmc7";       // 🔑 replace with your Cloudinary cloud name
+const uploadPreset = "ml_default"; // 🔑 replace with your unsigned preset
+
+document.getElementById("uploadForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const title = e.target.title.value.trim();
+  const file = e.target.video.files[0];
+  if (!file) return showToast("❌ Please select a video file", true);
+
+  showToast("⏳ Uploading video...");
+
+  try {
+    const result = await uploadVideo(file, title);
+    showToast("✅ Video uploaded successfully");
+    e.target.reset();
+    loadVideos();
+  } catch (err) {
+    console.error("Upload error:", err);
+    showToast("❌ " + err.message, true);
+  }
+});
 
   document.getElementById("chatUserSelect").addEventListener("change", e => {
     selectedChatUser = e.target.value || null;
@@ -451,17 +648,19 @@ async function loadUsers() {
     else document.getElementById("chatMessages").innerHTML = "<p>No user selected.</p>";
   });
 
+  
+
   // ✅ Delete
   async function deleteVideo(id) {
     await fetch(`/api/admin/videos/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
     showToast("✅ Video deleted");
-    loadAdminData();
+    loadVideos();
   }
 
   async function deleteUser(id) {
     await fetch(`/api/admin/users/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
     showToast("✅ User removed");
-    loadAdminData();
+    loadUsers();
   }
 
   // ✅ Polling every 5s for all users

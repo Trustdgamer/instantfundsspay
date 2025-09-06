@@ -207,6 +207,15 @@ body {
       <p id="uploadMessage"></p>
     </section>
 
+    <!-- Manage Videos -->
+<section class="card videos">
+  <h3>Manage Videos</h3>
+  <a href="admin-videos.html">
+    <button class="btn-primary">Go to Video Manager</button>
+  </a>
+</section>
+
+
     <!-- Add YouTube Video -->
     <section class="card upload">
       <h3>Add YouTube Video</h3>
@@ -218,10 +227,10 @@ body {
     </section>
 
     <!-- Manage Videos -->
-    <section class="card videos">
+   <!--<section class="card videos">
       <h3>All Videos</h3>
       <div class="video-grid" id="admin-video-list"></div>
-    </section>
+    </section>-->
     <!-- Admin Chat Section -->
 <section class="card chat">
   <h3>Chat with Users</h3>
@@ -382,64 +391,7 @@ function createLazyEmbed(url) {
 // --- Modified loadVideos with thumbnails ---
 
 // ================== Main Function ==================
-async function loadVideos() {
-  try {
-    const videosRes = await fetch("/api/admin/videos", {
-      headers: { Authorization: "Bearer " + token }
-    });
-    const videos = await videosRes.json();
-    const videoList = document.getElementById("admin-video-list");
-    videoList.innerHTML = "";
 
-    const stats = await fetch("/api/admin/video-stats", {
-      headers: { Authorization: "Bearer " + token }
-    }).then(res => res.json());
-
-    videos.forEach(v => {
-      const card = document.createElement("div");
-      card.classList.add("video-card");
-      card.id = `video-${v._id}`;
-
-      let media;
-      if (v.url.includes("youtube.com") || v.url.includes("youtu.be")) {
-        media = createLazyEmbed(v.url);
-      } else {
-        media = createLazyVideo(v.url, v.title);
-      }
-
-      const likeCount = stats[v._id] || 0;
-
-      card.innerHTML = `
-        ${media}
-        <p class="like-count">👍 ${likeCount} Likes</p>
-        <button class="btn-danger" onclick="deleteVideo('${v._id}')">Delete</button>
-      `;
-      videoList.appendChild(card);
-    });
-
-    // 🔄 Poll like stats every 5s
-    setInterval(async () => {
-      try {
-        const newStats = await fetch("/api/admin/video-stats", {
-          headers: { Authorization: "Bearer " + token }
-        }).then(res => res.json());
-
-        videos.forEach(v => {
-          const likeCount = newStats[v._id] || 0;
-          const card = document.getElementById(`video-${v._id}`);
-          if (card) {
-            card.querySelector(".like-count").textContent = `👍 ${likeCount} Likes`;
-          }
-        });
-      } catch (err) {
-        console.error("Error refreshing like stats:", err);
-      }
-    }, 5000);
-
-  } catch (err) {
-    showToast("❌ Error loading videos: " + err.message, true);
-  }
-}
 
 
 // --- Global click handler: replace thumb with iframe ---
@@ -586,11 +538,12 @@ document.getElementById("youtubeForm").addEventListener("submit", async (e) => {
     body: JSON.stringify({ url }),
   });
 
-  if (res.ok) {
-    showToast("✅ YouTube video added successfully");
-    e.target.reset();
-    loadVideos();
-  } else {
+  // after successful YouTube upload
+if (res.ok) {
+  showToast("✅ YouTube video added successfully");
+  e.target.reset();
+  window.location.href = "admin-videos.html"; // instead of loadVideos()
+} else {
     const err = await res.json();
     showToast("❌ " + (err.message || "Failed to add YouTube video"), true);
   }
@@ -630,16 +583,16 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   if (!file) return showToast("❌ Please select a video file", true);
 
   showToast("⏳ Uploading video...");
-
-  try {
-    const result = await uploadVideo(file, title);
-    showToast("✅ Video uploaded successfully");
-    e.target.reset();
-    loadVideos();
-  } catch (err) {
-    console.error("Upload error:", err);
-    showToast("❌ " + err.message, true);
-  }
+// after successful local upload
+try {
+  const result = await uploadVideo(file, title);
+  showToast("✅ Video uploaded successfully");
+  e.target.reset();
+  window.location.href = "admin-videos.html"; // instead of loadVideos()
+} catch (err) {
+  console.error("Upload error:", err);
+  showToast("❌ " + err.message, true);
+}
 });
 
   document.getElementById("chatUserSelect").addEventListener("change", e => {
@@ -651,11 +604,6 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   
 
   // ✅ Delete
-  async function deleteVideo(id) {
-    await fetch(`/api/admin/videos/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
-    showToast("✅ Video deleted");
-    loadVideos();
-  }
 
   async function deleteUser(id) {
     await fetch(`/api/admin/users/${id}`, { method: "DELETE", headers: { Authorization: "Bearer " + token } });
@@ -674,7 +622,6 @@ document.getElementById("uploadForm").addEventListener("submit", async (e) => {
   // Init
   // loadAdminData();
   document.addEventListener("DOMContentLoaded", () => {
-  loadVideos();
   loadUsers();
 });
 

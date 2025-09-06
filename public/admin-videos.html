@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Manage Videos</title>
+  <style>
+    body {
+      background: #0f172a;
+      color: #f5f5f5;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 20px;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    header h2 { color: #f9d342; }
+    header button {
+      background: #3498db;
+      border: none;
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .video-card {
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      transition: transform 0.2s;
+    }
+    .video-card:hover { transform: scale(1.02); }
+    .video-card iframe, .video-card video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* Thumbnail */
+    .video-thumb {
+      position: relative;
+      cursor: pointer;
+    }
+    .video-thumb img {
+      width: 100%;
+      border-radius: 8px;
+    }
+    .video-thumb::after {
+      content: "▶";
+      font-size: 40px;
+      color: white;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0.9;
+    }
+
+    .like-count {
+      margin: 8px 0;
+      font-size: 14px;
+      color: #f9d342;
+    }
+    .delete-btn {
+      background: #e74c3c;
+      border: none;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Skeleton loader */
+    .skeleton {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .skeleton::after {
+      content: "";
+      position: absolute;
+      top: 0; left: -150px;
+      width: 150px; height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shimmer 1.2s infinite;
+    }
+    @keyframes shimmer {
+      100% { left: 100%; }
+    }
+    .skeleton-thumb { height: 160px; margin-bottom: 10px; }
+    .skeleton-text { height: 16px; width: 60%; margin: 8px auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>📺 Manage Videos</h2>
+    <button onclick="window.location.href='admin.html'">⬅ Back to Dashboard</button>
+  </header>
+
+  <div class="video-grid" id="admin-video-list"></div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    let deleteId = null;
+
+    // ✅ Helpers
+    function getYTId(url) {
+      if (url.includes("v=")) return url.split("v=")[1].split("&")[0];
+      if (url.includes("youtu.be/")) return url.split("youtu.be/")[1].split("?")[0];
+      if (url.includes("/shorts/")) return url.split("/shorts/")[1].split("?")[0];
+      return null;
+    }
+
+    function createThumb(url) {
+      const ytId = getYTId(url);
+      return ytId 
+        ? `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`
+        : ""; // for non-YT videos
+    }
+
+    function showSkeletons(count=6) {
+      const list = document.getElementById("admin-video-list");
+      list.innerHTML = "";
+      for (let i=0; i<count; i++) {
+        list.innerHTML += `
+          <div class="video-card">
+            <div class="skeleton skeleton-thumb"></div>
+            <div class="skeleton skeleton-text"></div>
+          </div>
+        `;
+      }
+    }
+
+    // ✅ Load videos
+    async function loadAdminVideos() {
+      showSkeletons();
+
+      try {
+        const [videos, stats] = await Promise.all([
+          fetch("/api/admin/videos", { headers: { Authorization: "Bearer " + token } }).then(r=>r.json()),
+          fetch("/api/admin/video-stats", { headers: { Authorization: "Bearer " + token } }).then(r=>r.json())
+        ]);
+
+        const list = document.getElementById("admin-video-list");
+        list.innerHTML = "";
+
+        videos.forEach(v => {
+          const card = document.createElement("div");
+          card.className = "video-card";
+
+          let media;
+          if (v.url.includes("youtube.com") || v.url.includes("youtu.be")) {
+            const ytId = getYTId(v.url);
+            const thumb = createThumb(v.url);
+            media = `
+              <div class="video-thumb" onclick="this.outerHTML='<iframe src=&quot;https://www.youtube.com/embed/${ytId}&quot; frameborder=&quot;0&quot; allowfullscreen></iframe>'">
+                <img src="${thumb}">
+              </div>
+            `;
+          } else {
+            media = `<video src="${v.url}" controls></video>`;
+          }
+
+          const likeCount = stats[v._id] || 0;
+          card.innerHTML = `
+            ${media}
+            <p>${v.title || "Untitled Video"}</p>
+            <p class="like-count">👍 ${likeCount} Likes</p>
+            <button class="delete-btn" onclick="deleteVideo('${v._id}')">🗑 Delete</button>
+          `;
+          list.appendChild(card);
+        });
+      } catch (err) {
+        document.getElementById("admin-video-list").innerHTML = "<p>⚠ Failed to load videos</p>";
+      }
+    }
+
+    async function deleteVideo(id) {
+      await fetch("/api/admin/videos/" + id, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token }
+      });
+      loadAdminVideos();
+    }
+
+    loadAdminVideos();
+  </script>
+</body>
+</html>

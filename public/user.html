@@ -49,6 +49,7 @@
       flex: 1; padding: 20px; overflow-y: auto; margin-left: 0;
       transition: margin-left 0.3s ease; width: 100%; padding-bottom: 88px; /* space for bottom nav on mobile */
     }
+
     .sidebar.active ~ .main { margin-left: 280px; }
 
     nav {
@@ -77,9 +78,11 @@
 
     /* Video Grid */
     .video-grid {
-      display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
-      gap: 20px; margin-top: 20px;
-    }
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
     .video-card {
       background: var(--glass); backdrop-filter: blur(8px);
       border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
@@ -104,6 +107,10 @@
     .skeleton-card {
       background: var(--glass); border-radius: 16px; padding: 15px; overflow: hidden; position: relative;
     }
+    .bottom-nav {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
     .skeleton-thumb, .skeleton-title, .skeleton-btn {
       background: rgba(255,255,255,0.12); border-radius: 10px; position: relative; overflow: hidden;
     }
@@ -159,6 +166,10 @@
       background: transparent; border: none; color: #e5e7eb; font-weight: 600; font-size: 13px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer;
     }
+    button, .like-btn {
+  min-height: 44px; /* ✅ recommended for touch */
+}
+
     .bottom-nav button.active { color: #fff; }
     .bottom-nav .icon{ font-size: 18px; line-height: 1; }
 
@@ -294,6 +305,15 @@ body::before {
   color: #111;
   cursor: pointer;
 }
+@media (max-width: 480px) {
+  #chatBox {
+    width: 95%;
+    right: 2.5%;
+    bottom: 70px;
+    max-height: 60%;
+  }
+}
+
 
   </style>
 </head>
@@ -660,15 +680,18 @@ function renderVideos(videos) {
     requestAnimationFrame(() => card.classList.add("show"));
 
     // Show like after mp4 ends
-    if (!ytId) {
-      const videoEl = card.querySelector(`#vid-${video._id}`);
-      const likeEl = card.querySelector(`#${likeBtnId}`);
-      if (videoEl && likeEl) {
-        videoEl.addEventListener("ended", () => {
-          likeEl.style.display = "flex";
-        });
-      }
-    }
+      if (!ytId) {
+  const videoEl = card.querySelector(`#vid-${video._id}`);
+  const likeEl = card.querySelector(`#${likeBtnId}`);
+  if (videoEl && likeEl) {
+    videoEl.addEventListener("play", () => {
+      setTimeout(() => {
+        likeEl.style.display = "flex";
+      }, 5000);
+    }, { once: true });
+  }
+}
+
   });
 }
 

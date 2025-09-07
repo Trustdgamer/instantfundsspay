@@ -49,7 +49,6 @@
       flex: 1; padding: 20px; overflow-y: auto; margin-left: 0;
       transition: margin-left 0.3s ease; width: 100%; padding-bottom: 88px; /* space for bottom nav on mobile */
     }
-
     .sidebar.active ~ .main { margin-left: 280px; }
 
     nav {
@@ -78,17 +77,25 @@
 
     /* Video Grid */
     .video-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
+      display: grid; grid-template-columns: repeat(auto-fit,minmax(280px,1fr));
+      gap: 20px; margin-top: 20px;
+    }
     .video-card {
       background: var(--glass); backdrop-filter: blur(8px);
       border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
       padding: 15px; text-align: center; opacity: 0; transform: translateY(20px);
       transition: all 0.4s ease;
     }
+    .video-card iframe,
+.video-card video {
+  width: 100%;
+  aspect-ratio: 16 / 9; /* maintain 16:9 ratio */
+  border-radius: 10px;
+  margin-top: 10px;
+  object-fit: cover; /* ensures video fills space */
+  display: block;
+}
+
     .video-card.show { opacity: 1; transform: translateY(0); }
     .video-card iframe, .video-card video {
       border-radius: 10px; margin-top: 10px; max-width: 100%;
@@ -107,10 +114,6 @@
     .skeleton-card {
       background: var(--glass); border-radius: 16px; padding: 15px; overflow: hidden; position: relative;
     }
-    .bottom-nav {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
     .skeleton-thumb, .skeleton-title, .skeleton-btn {
       background: rgba(255,255,255,0.12); border-radius: 10px; position: relative; overflow: hidden;
     }
@@ -166,10 +169,6 @@
       background: transparent; border: none; color: #e5e7eb; font-weight: 600; font-size: 13px;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer;
     }
-    button, .like-btn {
-  min-height: 44px; /* ✅ recommended for touch */
-}
-
     .bottom-nav button.active { color: #fff; }
     .bottom-nav .icon{ font-size: 18px; line-height: 1; }
 
@@ -305,15 +304,6 @@ body::before {
   color: #111;
   cursor: pointer;
 }
-@media (max-width: 480px) {
-  #chatBox {
-    width: 95%;
-    right: 2.5%;
-    bottom: 70px;
-    max-height: 60%;
-  }
-}
-
 
   </style>
 </head>
@@ -625,6 +615,7 @@ function getThumbnailUrl(url) {
 
 function createLazyEmbed(videoId, url) {
   const thumb = getThumbnailUrl(url);
+  const liked = likedVideos.includes(videoId); // ✅ check like state
   return `
     <div class="video-thumb" data-url="${url}" style="position:relative;cursor:pointer;">
       <img src="${thumb}" style="width:100%;border-radius:10px;">
@@ -633,9 +624,9 @@ function createLazyEmbed(videoId, url) {
         padding:10px 14px;border-radius:50%;">▶</div>
     </div>
     <div class="video-actions" id="like-${videoId}" style="display:none;">
-      <button class="like-btn"
+      <button class="like-btn ${liked ? "liked" : ""}"
         onclick="toggleLike('${videoId}', '', '${url}', this)">
-        ❤ Like
+        ${liked ? "💚 Liked" : "❤ Like"}
       </button>
     </div>
   `;

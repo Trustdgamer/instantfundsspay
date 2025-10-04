@@ -606,6 +606,31 @@ app.get("/api/me", authMiddleware, async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 });
+// WITHDRAW 
+// GET user balance
+app.get("/api/user/balance", authMiddleware, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  res.json({ balance: user.balance || 0 });
+});
+
+// POST update balance
+app.post("/api/user/balance", authMiddleware, async (req, res) => {
+  const { balance } = req.body;
+  await User.findByIdAndUpdate(req.user.id, { balance });
+  res.json({ success: true });
+});
+
+// POST withdraw
+app.post("/api/user/withdraw", authMiddleware, async (req, res) => {
+  const user = await User.findById(req.user.id);
+  // Optionally log withdrawal request
+  user.balance = 0; // reset
+  await user.save();
+  res.json({ success: true, message: "Withdrawal requested" });
+});
+
+
+
 
 // ================== ADMIN ROUTES ==================
 const adminRouter = require('./routes/admin');

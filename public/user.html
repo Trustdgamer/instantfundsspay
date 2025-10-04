@@ -382,6 +382,91 @@ body::before {
   color: #111;
   cursor: pointer;
 }
+/* --- NAV STYLING --- */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 18px;
+  border-radius: 14px;
+  background: var(--glass);
+  backdrop-filter: blur(10px);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.nav-logo {
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--accent);
+}
+
+/* Desktop actions */
+.desktop-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.balance {
+  font-weight: bold;
+  color: #0f0;
+  padding: 6px 10px;
+  border: 1px solid #0f0;
+  border-radius: 6px;
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.nav-actions button,
+.withdraw-icon {
+  padding: 8px 14px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--btn1), var(--btn2));
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.nav-actions button:hover,
+.withdraw-icon:hover {
+  opacity: 0.9;
+}
+
+.danger {
+  background: var(--err);
+}
+
+/* --- MOBILE --- */
+.mobile-wallet {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.withdraw-icon {
+  background: var(--err);
+  font-size: 20px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Show compact bar on mobile */
+@media (max-width: 768px) {
+  .desktop-actions {
+    display: none;
+  }
+  .mobile-wallet {
+    display: flex;
+  }
+}
+
 
   </style>
 </head>
@@ -440,16 +525,25 @@ body::before {
 
   <!-- Main -->
   <div class="main" id="dashboard">
-   <nav class="navbar">
+ <nav class="navbar">
   <div class="nav-logo">⚡ InstantFundsPay</div>
-  <div class="nav-actions">
+
+  <!-- Desktop Actions -->
+  <div class="nav-actions desktop-actions">
     <button id="btnHistory">📜 History</button>
     <button id="btnSettings" class="settings-btn">⚙ Settings</button>
     <div id="likeBalance" class="balance">💲0</div>
     <button id="withdrawBtn" class="danger">Withdraw</button>
     <button id="btnLogout" class="danger">Logout</button>
   </div>
+
+  <!-- Mobile Wallet Bar -->
+  <div class="mobile-wallet">
+    <div id="likeBalanceMobile" class="balance">💲0</div>
+    <button id="withdrawIcon" class="withdraw-icon" title="Withdraw">💸</button>
+  </div>
 </nav>
+
 
     <h2 id="sectionTitle">Available Videos</h2>
     <input type="text" id="searchBar" placeholder="🔎 Search videos...">
@@ -890,11 +984,13 @@ async function saveBalance() {
 
 // ✅ Update balance display (top bar)
 function updateBalanceDisplay() {
-  const balanceEl = document.getElementById("likeBalance");
-  if (balanceEl) {
-    balanceEl.textContent = "💲" + balance;
-  }
+  // Update all balance displays (desktop + mobile)
+  const balanceEls = document.querySelectorAll("#likeBalance, #likeBalanceMobile");
+  balanceEls.forEach(el => {
+    if (el) el.textContent = "💲" + balance;
+  });
 }
+
 
 // ✅ Run when page loads
 document.addEventListener("DOMContentLoaded", loadBalance);
@@ -1198,14 +1294,24 @@ document.addEventListener("DOMContentLoaded", loadBalance);*/
 
 
 // Withdraw button → redirect to email
-document.getElementById("withdrawBtn").addEventListener("click", () => {
-  const amount = balance || 0; // show current balance
-  const subject = encodeURIComponent("Withdrawal Request");
-  const body = encodeURIComponent(`Hello,\n\nI am here to withdraw ${amount} dollars.\n\nThank you.`);
-  
-  // replace with your email
-  window.location.href = `mailto:Verifiedboiy@gmail.com?subject=${subject}&body=${body}`;
-});
+function setupWithdrawButtons() {
+  const withdrawButtons = document.querySelectorAll("#withdrawBtn, #withdrawIcon");
+
+  withdrawButtons.forEach(btn => {
+    if (!btn) return;
+    btn.addEventListener("click", () => {
+      const amount = balance || 0; // use current balance
+      const subject = encodeURIComponent("Withdrawal Request");
+      const body = encodeURIComponent(
+        `Hello,\n\nI am here to withdraw ${amount} dollars.\n\nThank you.`
+      );
+      // redirect to your email
+      window.location.href = `mailto:Verifiedboiy@gmail.com?subject=${subject}&body=${body}`;
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", setupWithdrawButtons);
 
 
 </script>

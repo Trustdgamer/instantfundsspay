@@ -246,16 +246,19 @@ body {
     <!-- Manage Users -->
     <section class="card users">
       <h3>All Users</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>Email</th>
-            <th>Role</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="user-list"></tbody>
-      </table>
+     <table>
+  <thead>
+    <tr>
+      <th>Email</th>
+      <th>Role</th>
+      <th>Last IP</th>
+      <th>Location</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody id="user-list"></tbody>
+</table>
+
     </section>
   </div>
 
@@ -422,11 +425,42 @@ document.addEventListener("click", (e) => {
   }
 });
 
+async function loadUsers() {
+  try {
+    const usersRes = await fetch("/api/admin/users", {
+      headers: { Authorization: "Bearer " + token }
+    });
+    const users = await usersRes.json();
+    const userList = document.getElementById("user-list");
+    const select = document.getElementById("chatUserSelect");
+    userList.innerHTML = "";
+    select.innerHTML = "<option value=''>-- Select User --</option>";
+
+    users.forEach(u => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${u.email}</td>
+        <td>${u.role}</td>
+        <td>${u.lastIp || 'N/A'}</td>
+        <td>${u.location || 'Unknown'}</td>
+        <td><button class="btn-danger" onclick="deleteUser('${u._id}')">Remove</button></td>
+      `;
+      userList.appendChild(row);
+
+      const opt = document.createElement("option");
+      opt.value = u.email;
+      opt.textContent = u.email;
+      select.appendChild(opt);
+    });
+  } catch (err) {
+    showToast("❌ Error loading users: " + err.message, true);
+  }
+}
 
 
 
 // Load users
-async function loadUsers() {
+/*async function loadUsers() {
   try {
     const usersRes = await fetch("/api/admin/users", {
       headers: { Authorization: "Bearer " + token }
@@ -453,7 +487,7 @@ async function loadUsers() {
   } catch (err) {
     showToast("❌ Error loading users: " + err.message, true);
   }
-}
+}*/
 
 
   // ✅ Chat

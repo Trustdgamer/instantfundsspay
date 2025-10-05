@@ -108,25 +108,34 @@
 <body>
   <div class="card-wrapper">
     <div class="card" id="authCard" aria-live="polite">
-      <!-- LOGIN PANEL -->
-      <div class="panel front">
-        <h2>Welcome back</h2>
-        <p class="hint"></p>
-        <form id="loginForm" autocomplete="on">
-          <input class="input" id="loginEmail" type="email" placeholder="Email" required /><div class="glow"></div>
-          <input class="input" id="loginPassword" type="password" placeholder="Password" required /><div class="glow"></div>
-          <div class="row">
-            <label class="checkbox"><input id="rememberMe" type="checkbox" style="accent-color:#7c3aed" /> Remember me</label>
-            <a class="link" id="forgotBtn">Forgot password?</a>
-          </div>
-          <button class="btn" type="submit">Login</button>
-          <div class="row" style="margin-top:6px;">
-            <button type="button" class="btn secondary" onclick="flipCard()">Create account</button>
-            <div style="flex:1"></div>
-          </div>
-          <div class="msg" id="loginMsg"></div>
-        </form>
-      </div>
+  <!-- LOGIN PANEL -->
+<div class="panel front">
+  <!-- LOGO & WELCOME -->
+  <div style="text-align:center; margin-bottom:14px;">
+    <!-- Logo: Dollar sign only, no bg -->
+    <span style="font-size:2rem; font-weight:bold; color:#facc15;">💵</span>
+    <h2 style="margin-top:6px; font-size:1.4rem; color:#f8fafc; letter-spacing:.4px;">
+      Welcome to InstantFundsPay
+    </h2>
+    <p class="hint" style="font-size:0.85rem;">Secure, fast, and reliable payments</p>
+  </div>
+  
+  <form id="loginForm" autocomplete="on">
+    <input class="input" id="loginEmail" type="email" placeholder="Email" required /><div class="glow"></div>
+    <input class="input" id="loginPassword" type="password" placeholder="Password" required /><div class="glow"></div>
+    <div class="row">
+      <label class="checkbox"><input id="rememberMe" type="checkbox" style="accent-color:#7c3aed" /> Remember me</label>
+      <a class="link" id="forgotBtn">Forgot password?</a>
+    </div>
+    <button class="btn" type="submit">Login</button>
+    <div class="row" style="margin-top:6px;">
+      <button type="button" class="btn secondary" onclick="flipCard()">Create account</button>
+      <div style="flex:1"></div>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </form>
+</div>
+
 
       <!-- REGISTER PANEL -->
       <div class="panel back">

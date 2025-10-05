@@ -542,7 +542,9 @@ body::before {
 
   </style>
 </head>
+
 <body>
+  
   <!-- Chat Icon -->
    <!--<div id="chatIcon" title="Chat with Admin">💬</div>
  
@@ -652,7 +654,7 @@ body::before {
 
 <div id="chatBox">
   <div id="chatHeader">
-    Chat with Admin 
+    InstantFundsPay Support
     <button id="closeChat">×</button>
   </div>
   <div id="chatMessages"></div>
@@ -734,8 +736,6 @@ body::before {
   loadMessages();
 </script>
 
-
-
 <script>
   /* ======== Auth Guard ======== */
   const token = localStorage.getItem("token");
@@ -754,11 +754,7 @@ body::before {
   const btnLogout = document.getElementById("btnLogout");
   const btnChangePassword = document.getElementById("btnChangePassword");
 
-  const navHome = document.getElementById("navHome");
-  const navHistory = document.getElementById("navHistory");
-  const navSettings = document.getElementById("navSettings");
-  const navLogout = document.getElementById("navLogout");
-
+ 
   /* ======== State ======== */
   let allVideos = [];
   let likedVideos = [];
@@ -1287,6 +1283,7 @@ document.addEventListener("DOMContentLoaded", loadBalance);*/
   function toggleSettings(){ settingsPanel.classList.toggle('active'); }
   function logout(){ localStorage.removeItem("token"); window.location.href = "/"; }
 
+
   /* ======== Wire Buttons (Top + Bottom Nav) ======== */
   btnSettings.addEventListener('click', () => { toggleSettings(); setActiveBottom(navSettings); });
   btnHistory.addEventListener('click', toggleHistory);
@@ -1342,6 +1339,7 @@ document.addEventListener("DOMContentLoaded", loadBalance);*/
 
 </script>
 <script>
+
   
 /*document.addEventListener("DOMContentLoaded", () => {
   const withdrawBtn = document.getElementById("withdrawBtn");
@@ -1366,18 +1364,18 @@ document.addEventListener("DOMContentLoaded", loadBalance);*/
   }
 });*/
 
-
 // Withdraw button → redirect to email
 document.getElementById("withdrawBtn").addEventListener("click", () => {
   const amount = balance || 0;
   const subject = encodeURIComponent("Withdrawal Request");
   const body = encodeURIComponent(`Hello,\n\nI would like to withdraw ${amount} dollars.\n\nThank you.`);
-  window.location.href = `mailto:Verifiedboiy@gmail.com?subject=${subject}&body=${body}`;
+  window.location.href = `mailto:instantfundspaywithdraw@gmail.com?subject=${subject}&body=${body}`;
 });
 
 document.addEventListener("DOMContentLoaded", setupWithdrawButtons);
 
 
 </script>
+
 </body>
 </html>

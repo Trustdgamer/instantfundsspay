@@ -64,7 +64,36 @@ router.post("/verify-email", async (req, res) => {
 // --------------------
 // LOGIN
 // --------------------
+// --------------------
+// LOGIN
+// --------------------
 router.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(400).json({ message: 'Invalid credentials' });
+
+    if (process.env.REQUIRE_EMAIL_VERIFICATION === 'true' && !user.isVerified) {
+      return res.status(403).json({ message: 'Please verify your email before logging in' });
+    }
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ message: 'Invalid credentials' });
+
+    // --- Save the user's IP automatically ---
+    user.lastIp = req.ip;
+    await user.save();
+
+    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET);
+    res.json({ token, role: user.role || 'user' });
+  } catch (err) {
+    console.error('login error', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+/*router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -83,7 +112,7 @@ router.post("/login", async (req, res) => {
     console.error('login error', err);
     res.status(500).json({ message: 'Server error' });
   }
-});
+});*/
 
 // --------------------
 // FORGOT PASSWORD
@@ -137,5 +166,6 @@ router.post("/reset-password", async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 module.exports = router;

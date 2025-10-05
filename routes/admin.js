@@ -4,11 +4,18 @@ const { v2: cloudinary } = require("cloudinary");
 const Video = require("../models/Video");
 const User = require("../models/User");
 
-const router = express.Router();
 
+const router = express.Router();
+// At the top of admin.js
+router.use((req, res, next) => {
+  // Grab client IP from proxy headers or direct socket
+  req.clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+  next();
+});
 // ================= Multer Setup =================
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+const geoip = require('geoip-lite');
 
 // ================= Cloudinary Config =================
 cloudinary.config({
@@ -120,14 +127,26 @@ router.delete("/videos/:id", async (req, res) => {
 });
 
 // ================= GET USERS =================
+
 router.get("/users", async (req, res) => {
   try {
     const users = await User.find();
-    res.json(users);
+    const enhancedUsers = users.map(u => {
+      const geo = geoip.lookup(u.lastIp) || {};
+      return {
+        _id: u._id,
+        email: u.email,
+        role: u.role,
+        ip: u.lastIp || 'N/A',
+        location: geo.country || 'Unknown',
+      };
+    });
+    res.json(enhancedUsers);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 // ================= DELETE USER =================
 router.delete("/users/:id", async (req, res) => {
@@ -139,5 +158,7 @@ router.delete("/users/:id", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// After login is successful
+
 
 module.exports = router;

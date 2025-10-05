@@ -35,12 +35,16 @@ const userSchema = new mongoose.Schema(
     likes: [likeSchema],
 
     // 👇 Add this balance field
-    balance: { type: Number, default: 0 }
+    balance: { type: Number, default: 0 },
+
+    // 👇 Track last IP of user
+    lastIp: { type: String }
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+
 
 
 

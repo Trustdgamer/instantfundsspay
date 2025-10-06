@@ -3,7 +3,6 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="theme-color" content="#071029">
   <title>InstantFundsPay — Login / Register</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial; }
@@ -25,32 +24,7 @@
     body::before { width:420px;height:420px; left:-110px; top:-80px; background: linear-gradient(180deg,#6b46c1,#805ad5); }
     body::after  { width:520px;height:520px; right:-160px; bottom:-140px; background: linear-gradient(180deg,#06b6d4,#60a5fa); }
 
-    .card-wrapper { 
-      width:100%; max-width:420px; height:480px;
-      z-index:1; padding:12px; position:relative;
-    }
-    .card {
-      width:100%; height:100%; border-radius:14px;
-      transform-style:preserve-3d;
-      transition: transform .9s cubic-bezier(.2,.9,.2,1);
-      margin: 0 auto; position:relative;
-    }
-    .card.flipped { transform: rotateY(180deg); }
-
-    .panel {
-      width:100%; height:100%;
-      background: rgba(255,255,255,0.05);
-      border-radius: 14px;
-      padding: 22px;
-      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
-      backdrop-filter: blur(8px) saturate(120%);
-      position:absolute; left:0; top:0; backface-visibility: hidden;
-      display:flex; flex-direction:column; justify-content:center; gap:12px; align-items:stretch;
-      overflow:hidden;
-    }
-    .panel h2 { text-align:center; margin-bottom:6px; font-size:1.4rem; color:#f8fafc; letter-spacing:.2px; }
-    .panel p.hint { text-align:center; color:rgba(230,230,255,0.6); font-size:0.9rem; margin-bottom:4px; }
-    .panel.back { transform: rotateY(180deg); }
+   
 
     form { display:flex; flex-direction:column; gap:10px; }
     .input {
@@ -148,24 +122,14 @@
     }
 
     .card {
-  width: 100%;
-  min-height: 520px;
-  border-radius: 18px;
-  transform-style: preserve-3d;
-  transition: transform 0.9s cubic-bezier(.2, .9, .2, 1);
-  position: relative;
-
-  /* NEW lines for mobile GPU acceleration */
-  will-change: transform;
-  transform: translateZ(0);
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  -webkit-transform-style: preserve-3d;
-}
-.card.flipped {
-  transform: rotateY(180deg) translateZ(0);
-}
-
+      width: 100%;
+      min-height: 520px;
+      border-radius: 18px;
+      transform-style: preserve-3d;
+      transition: transform .9s cubic-bezier(.2, .9, .2, 1);
+      position: relative;
+    }
+    .card.flipped { transform: rotateY(180deg); }
 
     .panel {
       width: 100%;
@@ -183,12 +147,6 @@
       justify-content: center;
       gap: 14px;
       align-items: stretch;
-  
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-  transform: translateZ(0);
-  will-change: transform;
-
     }
     .panel.back { transform: rotateY(180deg); }
 
@@ -313,9 +271,7 @@
           <h1>InstantFundsPay</h1>
         </div>
         <h2>Welcome Back</h2>
-        
         <p class="hint">Sign in to continue your secure transactions</p>
-
     <form id="loginForm">
       <input class="input" id="loginEmail" type="email" placeholder="Email address" required>
       <input class="input" id="loginPassword" type="password" placeholder="Password" required>
@@ -335,7 +291,6 @@
   <!-- REGISTER PANEL -->
   <div class="panel back">
     <div class="logo">
-
       <span>💵</span>
       <h1>InstantFundsPay</h1>
     </div>
@@ -403,11 +358,7 @@ const rememberMe = document.getElementById('rememberMe');
 
 function setMsg(el,text,color=''){ el.style.color=color||''; el.textContent=text||''; }
 function flipCard(){ card.classList.toggle('flipped'); setMsg(loginMsg,''); setMsg(registerMsg,''); }
-function flipCard() {
-      card.classList.toggle('flipped');
-      loginMsg.textContent = '';
-      registerMsg.textContent = '';
-    }
+
 /* ---------------------- PASSWORD STRENGTH ---------------------- */
 function checkStrength(pwd){
   const fill=document.querySelector('#strengthBar .fill'); let score=0;

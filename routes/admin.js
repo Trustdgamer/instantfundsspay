@@ -137,7 +137,7 @@ router.get("/users", async (req, res) => {
         _id: u._id,
         email: u.email,
         role: u.role,
-        ip: u.lastIp || 'N/A',
+        lastIp: u.lastIp || 'N/A',
         location: geo.country || 'Unknown',
       };
     });
@@ -146,6 +146,7 @@ router.get("/users", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 // ================= DELETE USER =================

@@ -66,9 +66,8 @@ router.post("/verify-email", async (req, res) => {
 /// --------------------
 // LOGIN (with IP + location tracking)
 // --------------------
-const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args)); 
-// this makes fetch() work even with require()
- // make sure to install this: npm i node-fetch
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+// make sure to install this: npm i node-fetch
 
 router.post("/login", async (req, res) => {
   try {
@@ -84,18 +83,29 @@ router.post("/login", async (req, res) => {
     if (!match) return res.status(400).json({ message: "Invalid credentials" });
 
     // --- Detect IP address (handles proxies too) ---
-    const ip =
+    let ip =
       req.headers["x-forwarded-for"]?.split(",")[0] ||
       req.headers["cf-connecting-ip"] ||
       req.socket.remoteAddress ||
       req.ip;
 
-    // --- Look up location from IP ---
+    // --- Fallback for localhost testing ---
+    if (ip === "::1" || ip === "127.0.0.1") {
+      ip = "8.8.8.8"; // fallback IP (Google DNS)
+    }
+
+    // --- Look up location using ipinfo.io ---
     let location = "Unknown";
     try {
-      const geo = await fetch(`https://ipapi.co/${ip}/json/`).then((r) => r.json());
-      if (geo && geo.country_name) {
-        location = `${geo.city || "Unknown City"}, ${geo.country_name}`;
+      
+      const token = process.env.IPINFO_TOKEN; // 👈 store your token in .env
+      console.log("Using token:", process.env.IPINFO_TOKEN);
+
+      const geo = await fetch(`https://ipinfo.io/${ip}/json?token=${token}`).then((r) => r.json());
+      if (geo && geo.country) {
+        const city = geo.city || "Unknown City";
+        const country = geo.country || "Unknown Country";
+        location = `${city}, ${country}`;
       }
     } catch (geoErr) {
       console.error("Geo lookup failed:", geoErr.message);
@@ -114,6 +124,8 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+
 
 
 

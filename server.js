@@ -360,8 +360,81 @@ app.post('/api/auth/register', async (req, res) => {
   }
 });
 
+
+const fetch = (...args) => import('node-fetch').then(({ default: fetch }) => fetch(...args));
+
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // --- Admin login ---
+    if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
+      const token = jwt.sign({ email, role: "admin" }, process.env.JWT_SECRET, { expiresIn: "7d" });
+      return res.json({ token, role: "admin", location: "Admin Access" });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(400).json({ message: "Invalid credentials" });
+
+    // --- Detect IP address (handles proxies too) ---
+    let ip =
+      req.headers["x-forwarded-for"]?.split(",")[0] ||
+      req.headers["cf-connecting-ip"] ||
+      req.socket.remoteAddress ||
+      req.ip;
+
+    // --- Normalize IPv6 localhost (::ffff:127.0.0.1) ---
+    if (ip?.startsWith("::ffff:")) ip = ip.replace("::ffff:", "");
+
+    // --- Fallback for localhost testing ---
+    if (ip === "::1" || ip === "127.0.0.1") {
+      console.log("Localhost detected, using fallback IP 8.8.8.8");
+      ip = "8.8.8.8"; // Google DNS — useful for testing
+    }
+
+    console.log("Detected IP:", ip);
+
+    // --- Look up location using ipinfo.io ---
+    let location = "Unknown";
+    try {
+      const token = process.env.IPINFO_TOKEN;
+      console.log("Using token:", token || "(none found)");
+      const geo = await fetch(`https://ipinfo.io/${ip}/json?token=${token}`).then((r) => r.json());
+      if (geo && (geo.city || geo.country)) {
+        location = `${geo.city || "Unknown City"}, ${geo.country || "Unknown Country"}`;
+      }
+    } catch (geoErr) {
+      console.error("Geo lookup failed:", geoErr.message);
+    }
+
+    console.log("Resolved Location:", location);
+
+    // --- Save IP + location in user ---
+    user.lastIp = ip || "N/A";
+    user.location = location || "Unknown";
+    await user.save();
+
+    // --- Issue JWT ---
+    const jwtToken = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.json({ token: jwtToken, role: user.role || "user", location, lastIp: ip });
+  } catch (err) {
+    console.error("Login error", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
+
 // Login
-app.post('/api/auth/login', async (req, res) => {
+/*app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -384,7 +457,7 @@ app.post('/api/auth/login', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
+*/
 // ================== FORGOT & RESET PASSWORD ==================
 let resetCodes = {}; // In-memory reset store
 
@@ -599,13 +672,23 @@ app.post("/api/history", authMiddleware, async (req, res) => {
 // User info
 app.get("/api/me", authMiddleware, async (req, res) => {
   try {
-    const user = await User.findById(req.user._id).select("email likes history");
+    const user = await User.findById(req.user._id).select("email likes history lastIp location");
     res.json(user);
   } catch (err) {
     console.error('/api/me error', err);
     res.status(500).json({ error: "Server error" });
   }
 });
+
+/*app.get("/api/me", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("email likes history");
+    res.json(user);
+  } catch (err) {
+    console.error('/api/me error', err);
+    res.status(500).json({ error: "Server error" });
+  }
+});*/
 // WITHDRAW 
 // GET user balance
 app.get("/api/user/balance", authMiddleware, async (req, res) => {

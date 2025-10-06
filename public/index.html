@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#071029">
   <title>InstantFundsPay — Login / Register</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial; }
@@ -147,14 +148,24 @@
     }
 
     .card {
-      width: 100%;
-      min-height: 520px;
-      border-radius: 18px;
-      transform-style: preserve-3d;
-      transition: transform .9s cubic-bezier(.2, .9, .2, 1);
-      position: relative;
-    }
-    .card.flipped { transform: rotateY(180deg); }
+  width: 100%;
+  min-height: 520px;
+  border-radius: 18px;
+  transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(.2, .9, .2, 1);
+  position: relative;
+
+  /* NEW lines for mobile GPU acceleration */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  -webkit-transform-style: preserve-3d;
+}
+.card.flipped {
+  transform: rotateY(180deg) translateZ(0);
+}
+
 
     .panel {
       width: 100%;
@@ -172,6 +183,12 @@
       justify-content: center;
       gap: 14px;
       align-items: stretch;
+  
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+
     }
     .panel.back { transform: rotateY(180deg); }
 
@@ -318,7 +335,7 @@
   <!-- REGISTER PANEL -->
   <div class="panel back">
     <div class="logo">
-      
+
       <span>💵</span>
       <h1>InstantFundsPay</h1>
     </div>

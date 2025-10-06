@@ -318,6 +318,7 @@
   <!-- REGISTER PANEL -->
   <div class="panel back">
     <div class="logo">
+      
       <span>💵</span>
       <h1>InstantFundsPay</h1>
     </div>
@@ -385,7 +386,11 @@ const rememberMe = document.getElementById('rememberMe');
 
 function setMsg(el,text,color=''){ el.style.color=color||''; el.textContent=text||''; }
 function flipCard(){ card.classList.toggle('flipped'); setMsg(loginMsg,''); setMsg(registerMsg,''); }
-
+function flipCard() {
+      card.classList.toggle('flipped');
+      loginMsg.textContent = '';
+      registerMsg.textContent = '';
+    }
 /* ---------------------- PASSWORD STRENGTH ---------------------- */
 function checkStrength(pwd){
   const fill=document.querySelector('#strengthBar .fill'); let score=0;

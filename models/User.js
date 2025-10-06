@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 // Schema for watch history
@@ -34,16 +33,20 @@ const userSchema = new mongoose.Schema(
     history: [historySchema],
     likes: [likeSchema],
 
-    // 👇 Add this balance field
+    // 👇 Account balance
     balance: { type: Number, default: 0 },
 
-    // 👇 Track last IP of user
-    lastIp: { type: String }
+    // 👇 Track last known IP address
+    lastIp: { type: String },
+
+    // 👇 Track user's approximate location
+    location: { type: String }
   },
   { timestamps: true }
 );
 
 module.exports = mongoose.models.User || mongoose.model("User", userSchema);
+
 
 
 

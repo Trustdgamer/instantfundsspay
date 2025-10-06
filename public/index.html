@@ -24,7 +24,32 @@
     body::before { width:420px;height:420px; left:-110px; top:-80px; background: linear-gradient(180deg,#6b46c1,#805ad5); }
     body::after  { width:520px;height:520px; right:-160px; bottom:-140px; background: linear-gradient(180deg,#06b6d4,#60a5fa); }
 
-   
+    .card-wrapper { 
+      width:100%; max-width:420px; height:480px;
+      z-index:1; padding:12px; position:relative;
+    }
+    .card {
+      width:100%; height:100%; border-radius:14px;
+      transform-style:preserve-3d;
+      transition: transform .9s cubic-bezier(.2,.9,.2,1);
+      margin: 0 auto; position:relative;
+    }
+    .card.flipped { transform: rotateY(180deg); }
+
+    .panel {
+      width:100%; height:100%;
+      background: rgba(255,255,255,0.05);
+      border-radius: 14px;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.02);
+      backdrop-filter: blur(8px) saturate(120%);
+      position:absolute; left:0; top:0; backface-visibility: hidden;
+      display:flex; flex-direction:column; justify-content:center; gap:12px; align-items:stretch;
+      overflow:hidden;
+    }
+    .panel h2 { text-align:center; margin-bottom:6px; font-size:1.4rem; color:#f8fafc; letter-spacing:.2px; }
+    .panel p.hint { text-align:center; color:rgba(230,230,255,0.6); font-size:0.9rem; margin-bottom:4px; }
+    .panel.back { transform: rotateY(180deg); }
 
     form { display:flex; flex-direction:column; gap:10px; }
     .input {
@@ -78,238 +103,59 @@
       z-index: 100000;
     }
     .modal.show { display:flex; align-items:center; justify-content:center; }
-        /* --- Swap Animated Background --- */
-    #swap {
-      position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: linear-gradient(135deg, #071029, #122033, #1b2b49);
-      background-size: 400% 400%;
-      animation: swapGradient 15s ease infinite;
-      z-index: 0;
-    }
-    @keyframes swapGradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-
-    body::before, body::after {
-      content: "";
-      position: absolute;
-      border-radius: 50%;
-      filter: blur(90px);
-      opacity: .45;
-      z-index: 0;
-    }
-    body::before { width: 420px; height: 420px; left: -110px; top: -80px; background: linear-gradient(180deg, #6b46c1, #805ad5); }
-    body::after  { width: 520px; height: 520px; right: -160px; bottom: -140px; background: linear-gradient(180deg, #06b6d4, #60a5fa); }
-
-    /* --- Auth Card --- */
-    .card-wrapper {
-      width: 100%;
-      max-width: 420px;
-      z-index: 2;
-      padding: 12px;
-      position: relative;
-      margin: auto;
-      animation: slideUpFade 0.9s ease both;
-    }
-
-    @keyframes slideUpFade {
-      0% { opacity: 0; transform: translateY(60px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    .card {
-      width: 100%;
-      min-height: 520px;
-      border-radius: 18px;
-      transform-style: preserve-3d;
-      transition: transform .9s cubic-bezier(.2, .9, .2, 1);
-      position: relative;
-    }
-    .card.flipped { transform: rotateY(180deg); }
-
-    .panel {
-      width: 100%;
-      height: 100%;
-      background: rgba(255,255,255,0.08);
-      border-radius: 18px;
-      padding: 28px 24px;
-      box-shadow: 0 10px 30px rgba(2,6,23,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
-      backdrop-filter: blur(10px) saturate(130%);
-      position: absolute;
-      left: 0; top: 0;
-      backface-visibility: hidden;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 14px;
-      align-items: stretch;
-    }
-    .panel.back { transform: rotateY(180deg); }
-
-    .logo {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
-    }
-    .logo span { font-size: 2rem; color: #22c55e; }
-    .logo h1 { font-size: 1.3rem; font-weight: 600; color: #f1f5f9; }
-
-    h2 {
-      text-align: center;
-      font-size: 1.5rem;
-      color: #f8fafc;
-      margin-bottom: 2px;
-    }
-    p.hint {
-      text-align: center;
-      color: rgba(230,230,255,0.7);
-      font-size: 0.9rem;
-      margin-bottom: 6px;
-    }
-
-    form { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-
-    .input {
-      background: rgba(255,255,255,0.05);
-      border-radius: 10px;
-      padding: 12px 14px;
-      border: 1px solid rgba(255,255,255,0.1);
-      color: #eaf2ff;
-      outline: none;
-      transition: all .2s ease;
-    }
-    .input::placeholder { color: rgba(230,240,255,0.45); }
-    .input:focus {
-      border-color: rgba(96,165,250,0.6);
-      box-shadow: 0 0 8px rgba(96,165,250,0.4);
-    }
-
-    .btn {
-      background: linear-gradient(135deg, #3b82f6, #06b6d4);
-      border: none;
-      padding: 12px;
-      border-radius: 10px;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform .15s, opacity .2s;
-    }
-    .btn:hover { opacity: .95; }
-    .btn:active { transform: scale(.98); }
-
-    .btn.secondary {
-      background: transparent;
-      border: 1px solid rgba(255,255,255,0.2);
-      color: #dbeafe;
-    }
-
-    .row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .checkbox {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: rgba(230,230,255,0.85);
-      font-size: 0.9rem;
-    }
-    .link {
-      color: #38bdf8;
-      text-decoration: none;
-      font-size: 0.9rem;
-    }
-    .link:hover { text-decoration: underline; }
-
-    .msg {
-      min-height: 18px;
-      font-size: 0.9rem;
-      text-align: center;
-      color: #cbd5e1;
-    }
-
-    #strengthBar {
-      height: 6px;
-      border-radius: 6px;
-      background: rgba(255,255,255,0.1);
-      overflow: hidden;
-    }
-    #strengthBar .fill {
-      width: 0%;
-      height: 100%;
-      transition: width .25s ease;
-      background: linear-gradient(90deg, #ff5f6d, #ffc371);
-    }
-
-    @media (max-width: 480px) {
-      .card-wrapper { padding: 8px; }
-      .panel { padding: 24px 18px; }
-      .panel h2 { font-size: 1.3rem; }
-      .btn { font-size: 0.95rem; }
-    }
   </style>
 </head>
 <body>
-
-  <div id="swap"></div>
-
   <div class="card-wrapper">
-    <div class="card" id="authCard">
-      <!-- LOGIN PANEL -->
-      <div class="panel front">
-        <div class="logo">
-          <span>💵</span>
-          <h1>InstantFundsPay</h1>
-        </div>
-        <h2>Welcome Back</h2>
-        <p class="hint">Sign in to continue your secure transactions</p>
-    <form id="loginForm">
-      <input class="input" id="loginEmail" type="email" placeholder="Email address" required>
-      <input class="input" id="loginPassword" type="password" placeholder="Password" required>
-
-      <div class="row">
-        <label class="checkbox"><input type="checkbox" id="rememberMe" style="accent-color:#3b82f6;"> Remember me</label>
-        <a class="link" id="forgotBtn">Forgot Password?</a>
-      </div>
-
-      <button class="btn" type="submit">Login Now</button>
-      <button class="btn secondary" type="button" onclick="flipCard()">Register</button>
-      <div class="msg" id="loginMsg"></div>
-    </form>
+    <div class="card" id="authCard" aria-live="polite">
+  <!-- LOGIN PANEL -->
+<div class="panel front">
+  <!-- LOGO & WELCOME -->
+  <div style="text-align:center; margin-bottom:14px;">
+    <!-- Logo: Dollar sign only, no bg -->
+    <span style="font-size:2rem; font-weight:bold; color:#facc15;">💵</span>
+    <h2 style="margin-top:6px; font-size:1.4rem; color:#f8fafc; letter-spacing:.4px;">
+      Welcome to InstantFundsPay
+    </h2>
+    <p class="hint" style="font-size:0.85rem;">Secure, fast, and reliable payments</p>
   </div>
+  
+  <form id="loginForm" autocomplete="on">
+    <input class="input" id="loginEmail" type="email" placeholder="Email" required /><div class="glow"></div>
+    <input class="input" id="loginPassword" type="password" placeholder="Password" required /><div class="glow"></div>
+    <div class="row">
+      <label class="checkbox"><input id="rememberMe" type="checkbox" style="accent-color:#7c3aed" /> Remember me</label>
+      <a class="link" id="forgotBtn">Forgot password?</a>
+    </div>
+    <button class="btn" type="submit">Login</button>
+    <div class="row" style="margin-top:6px;">
+      <button type="button" class="btn secondary" onclick="flipCard()">Create account</button>
+      <div style="flex:1"></div>
+    </div>
+    <div class="msg" id="loginMsg"></div>
+  </form>
+</div>
+
 
       <!-- REGISTER PANEL -->
-  <!-- REGISTER PANEL -->
-  <div class="panel back">
-    <div class="logo">
-      <span>💵</span>
-      <h1>InstantFundsPay</h1>
+      <div class="panel back">
+        <h2>Create account</h2>
+        <p class="hint">Quick, secure sign up — verification code will be sent to your email</p>
+        <form id="registerForm" autocomplete="on">
+          <input class="input" id="name" type="text" placeholder="Full name" required /><div class="glow"></div>
+          <input class="input" id="regEmail" type="email" placeholder="Email" required /><div class="glow"></div>
+          <input class="input" id="regPassword" type="password" placeholder="Password" required oninput="checkStrength(this.value)" />
+          <div id="strengthBar"><div class="fill"></div></div>
+          <input class="input" id="confirm" type="password" placeholder="Confirm password" required /><div class="glow"></div>
+          <div class="row">
+            <button class="btn" type="submit">Register</button>
+            <button type="button" class="btn secondary" onclick="flipCard()">Back</button>
+          </div>
+          <div class="msg" id="registerMsg"></div>
+        </form>
+      </div>
     </div>
-    <h2>Create Your Account</h2>
-    <p class="hint">Quick, secure sign up — it only takes a minute</p>
-
-    <form id="registerForm">
-      <input class="input" id="name" type="text" placeholder="Full Name" required>
-      <input class="input" id="regEmail" type="email" placeholder="Email address" required>
-      <input class="input" id="regPassword" type="password" placeholder="Password" required oninput="checkStrength(this.value)">
-      <div id="strengthBar"><div class="fill"></div></div>
-      <input class="input" id="confirm" type="password" placeholder="Confirm Password" required>
-
-      <button class="btn" type="submit">Register Now</button>
-      <button class="btn secondary" type="button" onclick="flipCard()">Back to Login</button>
-      <div class="msg" id="registerMsg"></div>
-    </form>
   </div>
-</div>
 
   <!-- FORGOT PASSWORD MODAL (3-step flow) -->
   <div id="forgotModal" class="modal-backdrop" role="dialog" aria-modal="true">
